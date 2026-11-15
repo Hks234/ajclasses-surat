@@ -3,6 +3,7 @@ import { resourceByKey } from "@/lib/admin-resources";
 import { requireAdmin } from "@/lib/auth";
 import { logActivity } from "@/lib/content";
 import { one, ready, run } from "@/lib/db";
+import { mediaDiskPath } from "@/lib/files";
 import { bad, json, originBlock } from "@/lib/http";
 import { clientIp, now, rupeesToPaise, slugify } from "@/lib/utils";
 
@@ -53,8 +54,9 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ resource: st
   if (resource.softDelete) await run(`UPDATE ${resource.table} SET deleted_at = ? WHERE id = ?`, [now(), id]);
   else {
     if (resource.table === "media_assets") {
-      const media = await one<any>("SELECT path FROM media_assets WHERE id = ?", [id]);
-      if (media?.path && fs.existsSync(media.path)) fs.unlinkSync(media.path);
+      const media = await one<any>("SELECT path, filename FROM media_assets WHERE id = ?", [id]);
+      const disk = media ? mediaDiskPath(media.path || "", media.filename) : "";
+      if (disk && fs.existsSync(disk)) fs.unlinkSync(disk);
     }
     await run(`DELETE FROM ${resource.table} WHERE id = ?`, [id]);
   }

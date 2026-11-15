@@ -102,6 +102,8 @@ export const schemaStatements = [
     mime VARCHAR(120),
     size_bytes INTEGER NOT NULL DEFAULT 0,
     path TEXT NOT NULL,
+    file_data LONGBLOB,
+    file_b64 LONGTEXT,
     alt TEXT,
     folder VARCHAR(80),
     is_public INTEGER NOT NULL DEFAULT 1,
@@ -587,4 +589,6 @@ export const columnPatches: [string, string, string][] = [
   ["achievements", "city", "VARCHAR(120)"],
   ["achievements", "paper", "VARCHAR(120)"],
   ["achievements", "rank_line", "VARCHAR(180)"],
+  ["media_assets", "file_data", "LONGBLOB"],
+  ["media_assets", "file_b64", "LONGTEXT"],
 ];

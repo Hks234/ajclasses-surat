@@ -29,26 +29,77 @@ export function sniffPdf(buffer: Buffer): SniffedFile | null {
   return null;
 }
 
+export function mediaDiskPath(storedPath: string, filename?: string) {
+  if (storedPath && path.isAbsolute(storedPath)) return storedPath;
+  if (storedPath) return path.join(storageRoot(), storedPath);
+  if (filename) return path.join(storageRoot(), "media", filename);
+  return "";
+}
+
+export function asFileBuffer(value: unknown) {
+  if (!value) return null;
+  if (Buffer.isBuffer(value)) return value;
+  if (value instanceof Uint8Array) return Buffer.from(value);
+  if (typeof value === "string") {
+    const text = value.trim();
+    if (!text) return null;
+    if (/^[0-9a-f]+$/i.test(text) && text.length % 2 === 0 && text.length > 16) {
+      try {
+        return Buffer.from(text, "hex");
+      } catch {
+        return Buffer.from(text, "base64");
+      }
+    }
+    return Buffer.from(text, "base64");
+  }
+  if (typeof value === "object" && value && Array.isArray((value as { data?: unknown }).data)) {
+    return Buffer.from((value as { data: number[] }).data);
+  }
+  return null;
+}
+
 export async function savePublicMedia(buffer: Buffer, originalName: string, createdBy: string, alt = "") {
   const kind = sniffImage(buffer) || sniffPdf(buffer);
   if (!kind) throw new Error("Upload a PNG, JPG, WEBP, GIF, SVG or PDF.");
-  if (buffer.length > 12 * 1024 * 1024) throw new Error("File is larger than 12 MB.");
+  if (buffer.length > 4 * 1024 * 1024) throw new Error("Keep logos and photos under 4 MB so they stay saved on the live website.");
   const mediaId = id();
   const filename = `${mediaId}${kind.ext}`;
-  const full = path.join(storageRoot(), "media", filename);
-  fs.writeFileSync(full, kind.ext === ".svg" && typeof kind.svg === "string" ? kind.svg : buffer);
-  await insert("media_assets", {
+  const relative = path.join("media", filename);
+  const payload = kind.ext === ".svg" && typeof kind.svg === "string" ? Buffer.from(kind.svg, "utf8") : buffer;
+  const full = path.join(storageRoot(), relative);
+  try {
+    fs.mkdirSync(path.dirname(full), { recursive: true });
+    fs.writeFileSync(full, payload);
+  } catch {}
+  const fileB64 = payload.toString("base64");
+  const row = {
     id: mediaId,
     filename,
     original_name: originalName.slice(0, 180),
     mime: kind.mime,
-    size_bytes: buffer.length,
-    path: full,
+    size_bytes: payload.length,
+    path: relative,
+    file_b64: fileB64,
     alt,
     folder: "library",
     is_public: 1,
     created_by: createdBy,
     created_at: now(),
-  });
-  return { id: mediaId, url: `/api/media/public/${mediaId}`, mime: kind.mime, size: buffer.length };
+  };
+  try {
+    await insert("media_assets", { ...row, file_data: payload });
+  } catch {
+    try {
+      await insert("media_assets", row);
+    } catch {
+      const { file_b64: _unused, ...legacy } = row;
+      void _unused;
+      await insert("media_assets", { ...legacy, file_data: payload });
+    }
+  }
+  const url =
+    payload.length <= 350 * 1024
+      ? `data:${kind.mime};base64,${fileB64}`
+      : `/api/media/public/${mediaId}`;
+  return { id: mediaId, url, mime: kind.mime, size: payload.length };
 }

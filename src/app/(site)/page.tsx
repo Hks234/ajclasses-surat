@@ -9,6 +9,7 @@ import { AchieverRail, CommunityForm, EventRail, FacultyRail, FaqList, LogoStrip
 import { accentLast, Kicker } from "@/components/heading";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function highlightTitle(title: string, highlight?: string) {
   if (highlight && title.includes(highlight)) {
@@ -27,7 +28,20 @@ function highlightTitle(title: string, highlight?: string) {
 }
 
 export default async function HomePage() {
-  await ready();
+  try {
+    await ready();
+  } catch (error) {
+    console.error("[aj-classes] Homepage could not open the database.", error);
+    return (
+      <section className="page-hero py-24">
+        <div className="container-aj">
+          <p className="kicker">AJ Classes</p>
+          <h1 className="mt-4">AJ Classes</h1>
+          <p className="mt-4 max-w-xl text-white/80">The website is connecting to its database. Refresh this page in a few seconds. On the live host, set DATABASE_URL to your MySQL database so logos, photos and pages stay saved.</p>
+        </div>
+      </section>
+    );
+  }
   const [hero, why, programmes, alumni, faqsSection, community, counsellor, shopSection, placement, eventsSection, reviewsSection, facultySection, courses, faculty, achievements, testimonials, settings, branches, topBanners, midBanners, shop, faqs, partners, events] = await Promise.all([
     getSection("hero"), getSection("why"), getSection("programmes"), getSection("alumni"), getSection("faqs"), getSection("community"), getSection("counsellor"), getSection("shop"), getSection("placement"), getSection("events"), getSection("reviews"), getSection("faculty_home"),
     getCourses(), getFaculty(), getAchievements(), getTestimonials(), getSettings(), getBranches(), getBanners("home_top"), getBanners("home_mid"), getShopItems(), getFaqs(), getPartners(), getEvents(),

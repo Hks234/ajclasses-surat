@@ -1,15 +1,21 @@
 import fs from "fs";
 import path from "path";
 import { AsyncLocalStorage } from "async_hooks";
-import { DatabaseSync } from "node:sqlite";
 import mysql from "mysql2/promise";
 import { columnPatches, extraSchemaStatements, schemaStatements } from "./schema";
 
-export type SqlValue = string | number | null;
+export type SqlValue = string | number | null | Buffer;
+type SqliteDb = {
+  exec: (sql: string) => void;
+  prepare: (sql: string) => {
+    all: (...params: SqlValue[]) => unknown[];
+    run: (...params: SqlValue[]) => { changes?: number };
+  };
+};
 type Store = { inTx: boolean; conn?: mysql.PoolConnection };
 
 const als = new AsyncLocalStorage<Store>();
-let sqlite: DatabaseSync | null = null;
+let sqlite: SqliteDb | null = null;
 let pool: mysql.Pool | null = null;
 let mode: "sqlite" | "mysql" = "sqlite";
 let phase: "idle" | "init" | "ready" = "idle";
@@ -155,7 +161,7 @@ function mysqlPoolOptions(url: string) {
     connectionLimit: 10,
     waitForConnections: true,
     enableKeepAlive: true,
-    connectTimeout: 20000,
+    connectTimeout: process.env.VERCEL ? 8000 : 30000,
     remappedFrom: requested,
   };
   if (sslRequested) options.ssl = { minVersion: "TLSv1.2", rejectUnauthorized: true };
@@ -173,7 +179,20 @@ async function createMysqlPool(url: string) {
       await bootstrap.end();
     }
   }
-  return mysql.createPool(options);
+  let lastError: unknown;
+  const attempts = process.env.VERCEL ? 2 : 3;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    const created = mysql.createPool(options);
+    try {
+      await created.query("SELECT 1");
+      return created;
+    } catch (error) {
+      lastError = error;
+      await created.end().catch(() => undefined);
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+    }
+  }
+  throw lastError;
 }
 
 async function tableCount() {
@@ -223,9 +242,12 @@ export async function ready() {
     if (url.startsWith("mysql://") || url.startsWith("mysqls://")) {
       mode = "mysql";
       pool = await createMysqlPool(url);
+    } else if (process.env.VERCEL) {
+      throw new Error("Set DATABASE_URL to a MySQL database on the live host. Temporary local files are wiped after each refresh, so logos, faculty photos and pages cannot stay saved.");
     } else {
       mode = "sqlite";
-      sqlite = new DatabaseSync(sqlitePath());
+      const { DatabaseSync } = await import("node:sqlite");
+      sqlite = new DatabaseSync(sqlitePath()) as unknown as SqliteDb;
       sqlite.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
     }
     await migrate();

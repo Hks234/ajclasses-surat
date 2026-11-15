@@ -73,7 +73,7 @@ export function ImageUploadField({
         ) : null}
       </div>
       <p className="text-xs text-slate-500">
-        {busy ? "Uploading from this computer…" : "Choose a PNG, JPG, WEBP, GIF or SVG from this computer."}
+        {busy ? "Uploading from this computer…" : "Choose a PNG, JPG, WEBP, GIF or SVG from this computer. Keep live-site photos under 4 MB so they stay saved after deploy."}
       </p>
       {error ? <p className="text-sm font-semibold text-red-700">{error}</p> : null}
     </div>

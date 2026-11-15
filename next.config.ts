@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Standalone is for Docker / `node server.js`. On Vercel it runs after a
-  // successful compile and fails packaging, so the deployment never goes live.
-  output: process.env.VERCEL ? undefined : "standalone",
+  // Only emit the Docker `server.js` bundle when explicitly requested.
+  // A default standalone build on ordinary hosts leaves CSS/JS behind, so the
+  // live site looks blank after a successful compile.
+  output: process.env.OUTPUT_STANDALONE === "1" ? "standalone" : undefined,
   poweredByHeader: false,
   reactStrictMode: true,
   allowedDevOrigins: ["127.0.0.1", "localhost"],

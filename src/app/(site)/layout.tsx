@@ -5,6 +5,7 @@ import { Footer } from "@/components/footer";
 import { WhatsAppButton } from "@/components/widgets";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   let branding: any = { name: "AJ Classes", line: "Aditya Jhawar Education", tagline: "", email: "", phone: "", logoUrl: "", logoDark: "", logoLight: "", favicon: "", logoHeight: 52, logoBg: "transparent", instagram: "", facebook: "", youtube: "", linkedin: "", whatsapp: "", footer: "" };

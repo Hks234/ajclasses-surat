@@ -242,8 +242,6 @@ export async function ready() {
     if (url.startsWith("mysql://") || url.startsWith("mysqls://")) {
       mode = "mysql";
       pool = await createMysqlPool(url);
-    } else if (process.env.VERCEL) {
-      throw new Error("Set DATABASE_URL to a MySQL database on the live host. Temporary local files are wiped after each refresh, so logos, faculty photos and pages cannot stay saved.");
     } else {
       mode = "sqlite";
       const { DatabaseSync } = await import("node:sqlite");

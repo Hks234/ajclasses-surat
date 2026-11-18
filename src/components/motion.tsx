@@ -5,21 +5,25 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export function Reveal({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [show, setShow] = useState(false);
+  const [show, setShow] = useState(true);
   useEffect(() => {
     const node = ref.current;
-    if (!node) return;
+    if (!node || typeof IntersectionObserver === "undefined") return;
     const observer = new IntersectionObserver((entries) => {
       if (entries[0]?.isIntersecting) {
         setShow(true);
         observer.disconnect();
       }
-    }, { threshold: 0.16 });
+    }, { threshold: 0.08 });
     observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
+    const fallback = window.setTimeout(() => setShow(true), 80 + delay);
+    return () => {
+      window.clearTimeout(fallback);
+      observer.disconnect();
+    };
+  }, [delay]);
   return (
-    <div ref={ref} className={className} style={{ opacity: show ? 1 : 0, transform: show ? "none" : "translateY(28px)", transition: `opacity .7s ease ${delay}ms, transform .7s ease ${delay}ms` }}>
+    <div ref={ref} className={className} style={{ transform: show ? "none" : "translateY(16px)", transition: `transform .7s ease ${delay}ms` }}>
       {children}
     </div>
   );

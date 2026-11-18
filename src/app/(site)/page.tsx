@@ -7,6 +7,7 @@ import { telLink, waLink } from "@/lib/utils";
 import { HeroFloats, Reveal } from "@/components/motion";
 import { AchieverRail, CommunityForm, EventRail, FacultyRail, FaqList, LogoStrip, ProgrammeRail, ReviewRail, ShopRail } from "@/components/site-ui";
 import { accentLast, Kicker } from "@/components/heading";
+import { defaultBranches, defaultCourses, defaultFaculty, defaultFaqs, defaultFeatures, defaultHero, defaultSections, defaultTestimonials } from "@/lib/site-defaults";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -28,28 +29,67 @@ function highlightTitle(title: string, highlight?: string) {
 }
 
 export default async function HomePage() {
+  let hero: any = defaultHero;
+  let why: any = defaultSections.why;
+  let programmes: any = defaultSections.programmes;
+  let alumni: any = defaultSections.alumni;
+  let faqsSection: any = defaultSections.faqs;
+  let community: any = defaultSections.community;
+  let counsellor: any = defaultSections.counsellor;
+  let shopSection: any = defaultSections.shop;
+  let placement: any = defaultSections.placement;
+  let eventsSection: any = defaultSections.events;
+  let reviewsSection: any = defaultSections.reviews;
+  let facultySection: any = defaultSections.faculty_home;
+  let courses: any[] = defaultCourses;
+  let faculty: any[] = defaultFaculty;
+  let achievements: any[] = [];
+  let testimonials: any[] = defaultTestimonials;
+  let settings: Record<string, string> = {};
+  let branches: any[] = defaultBranches;
+  let topBanners: any[] = [];
+  let midBanners: any[] = [];
+  let shop: any[] = [];
+  let faqs: any[] = defaultFaqs;
+  let partners: any[] = [];
+  let events: any[] = [];
   try {
     await ready();
+    const loaded = await Promise.all([
+      getSection("hero"), getSection("why"), getSection("programmes"), getSection("alumni"), getSection("faqs"), getSection("community"), getSection("counsellor"), getSection("shop"), getSection("placement"), getSection("events"), getSection("reviews"), getSection("faculty_home"),
+      getCourses(), getFaculty(), getAchievements(), getTestimonials(), getSettings(), getBranches(), getBanners("home_top"), getBanners("home_mid"), getShopItems(), getFaqs(), getPartners(), getEvents(),
+    ]);
+    hero = loaded[0] || defaultHero;
+    why = loaded[1] || defaultSections.why;
+    programmes = loaded[2] || defaultSections.programmes;
+    alumni = loaded[3] || defaultSections.alumni;
+    faqsSection = loaded[4] || defaultSections.faqs;
+    community = loaded[5] || defaultSections.community;
+    counsellor = loaded[6] || defaultSections.counsellor;
+    shopSection = loaded[7] || defaultSections.shop;
+    placement = loaded[8] || defaultSections.placement;
+    eventsSection = loaded[9] || defaultSections.events;
+    reviewsSection = loaded[10] || defaultSections.reviews;
+    facultySection = loaded[11] || defaultSections.faculty_home;
+    courses = (loaded[12] as any[]).length ? loaded[12] as any[] : defaultCourses;
+    faculty = (loaded[13] as any[]).length ? loaded[13] as any[] : defaultFaculty;
+    achievements = loaded[14] as any[];
+    testimonials = (loaded[15] as any[]).length ? loaded[15] as any[] : defaultTestimonials;
+    settings = loaded[16] as Record<string, string>;
+    branches = (loaded[17] as any[]).length ? loaded[17] as any[] : defaultBranches;
+    topBanners = loaded[18] as any[];
+    midBanners = loaded[19] as any[];
+    shop = loaded[20] as any[];
+    faqs = (loaded[21] as any[]).length ? loaded[21] as any[] : defaultFaqs;
+    partners = loaded[22] as any[];
+    events = loaded[23] as any[];
   } catch (error) {
-    console.error("[aj-classes] Homepage could not open the database.", error);
-    return (
-      <section className="page-hero py-24">
-        <div className="container-aj">
-          <p className="kicker">AJ Classes</p>
-          <h1 className="mt-4">AJ Classes</h1>
-          <p className="mt-4 max-w-xl text-white/80">The website is connecting to its database. Refresh this page in a few seconds. On the live host, set DATABASE_URL to your MySQL database so logos, photos and pages stay saved.</p>
-        </div>
-      </section>
-    );
+    console.error("[aj-classes] Homepage is using built-in content while the database reconnects.", error);
   }
-  const [hero, why, programmes, alumni, faqsSection, community, counsellor, shopSection, placement, eventsSection, reviewsSection, facultySection, courses, faculty, achievements, testimonials, settings, branches, topBanners, midBanners, shop, faqs, partners, events] = await Promise.all([
-    getSection("hero"), getSection("why"), getSection("programmes"), getSection("alumni"), getSection("faqs"), getSection("community"), getSection("counsellor"), getSection("shop"), getSection("placement"), getSection("events"), getSection("reviews"), getSection("faculty_home"),
-    getCourses(), getFaculty(), getAchievements(), getTestimonials(), getSettings(), getBranches(), getBanners("home_top"), getBanners("home_mid"), getShopItems(), getFaqs(), getPartners(), getEvents(),
-  ]);
   const extra = parseExtra(hero?.extra_json);
   const ctas = extra.ctas || [];
   const whyExtra = parseExtra(why?.extra_json);
-  const features = Array.isArray(whyExtra) ? whyExtra : [];
+  const features = Array.isArray(whyExtra) && whyExtra.length ? whyExtra : defaultFeatures;
   const trust = extra.trust || [
     { label: settings.trust_line || "Trusted coaching for CA, CS and CMA" },
     { label: "Classroom batches in Surat" },
@@ -137,19 +177,17 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {shopSection ? (
-        <section className="bg-plum pb-16 text-white">
-          <div className="container-aj text-center">
-            <Kicker>{parseExtra(shopSection.extra_json).kicker || "Shop"}</Kicker>
-            <h2 className="mt-4 font-display text-[32px] font-normal leading-10">{accentLast(shopSection.title || settings.shop_title || "Buy a published batch")}</h2>
-            <p className="mx-auto mt-3 max-w-2xl text-white/70">{shopSection.subtitle || settings.shop_subtitle}</p>
-          </div>
-          <div className="container-aj mt-4">
-            <ShopRail items={shop} />
-            <div className="mt-6 text-center"><Link href={shopSection.cta_href || "/shop"} className="btn-orange">{shopSection.cta_label || "Open the shop"}</Link></div>
-          </div>
-        </section>
-      ) : null}
+      <section className="bg-plum pb-16 text-white">
+        <div className="container-aj text-center">
+          <Kicker>{parseExtra(shopSection?.extra_json).kicker || "Shop"}</Kicker>
+          <h2 className="mt-4 font-display text-[32px] font-normal leading-10">{accentLast(shopSection?.title || settings.shop_title || "Buy a published batch")}</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-white/70">{shopSection?.subtitle || settings.shop_subtitle}</p>
+        </div>
+        <div className="container-aj mt-4">
+          <ShopRail items={shop} />
+          <div className="mt-6 text-center"><Link href={shopSection?.cta_href || "/shop"} className="btn-orange">{shopSection?.cta_label || "Open the shop"}</Link></div>
+        </div>
+      </section>
 
       <section className="bg-white py-16">
         <div className="container-aj text-center">
@@ -161,14 +199,13 @@ export default async function HomePage() {
         {universityLogos.length ? <LogoStrip items={universityLogos} /> : null}
       </section>
 
-      {placement ? (
-        <section className="bg-plum py-16 text-white">
+      <section className="bg-plum py-16 text-white">
           <div className="container-aj grid items-start gap-10 lg:grid-cols-[.9fr_1.1fr]">
             <div>
               <Kicker>{placementExtra.kicker || "Results"}</Kicker>
-              <h2 className="mt-4 font-display text-[32px] font-normal leading-10">{accentLast(placement.title)}</h2>
-              <p className="mt-3 text-white/70">{placement.subtitle}</p>
-              {placement.cta_href ? <Link href={placement.cta_href} className="btn-ghost mt-6">{placement.cta_label || "View more"}</Link> : null}
+              <h2 className="mt-4 font-display text-[32px] font-normal leading-10">{accentLast(placement?.title || "Classroom Coaching, Online Learning")}</h2>
+              <p className="mt-3 text-white/70">{placement?.subtitle}</p>
+              {placement?.cta_href ? <Link href={placement.cta_href} className="btn-ghost mt-6">{placement.cta_label || "View more"}</Link> : null}
             </div>
             <div className="grid gap-6 sm:grid-cols-2">
               {placementStats.map((item: any) => (
@@ -183,7 +220,6 @@ export default async function HomePage() {
             <AchieverRail items={achievements.slice(0, 8)} />
           </div>
         </section>
-      ) : null}
 
       {awardLogos.length ? (
         <section className="bg-white py-12">
@@ -197,13 +233,12 @@ export default async function HomePage() {
 
       <BannerSlider banners={midBanners} />
 
-      {why ? (
-        <section className="bg-plum py-16 text-white">
+      <section className="bg-plum py-16 text-white">
           <div className="container-aj">
             <Reveal className="text-center">
-              <Kicker>{parseExtra(why.extra_json).kicker || settings.why_kicker || "The AJ Classes Advantage"}</Kicker>
-              <h2 className="mt-4 font-display text-[32px] font-normal leading-10">{accentLast(why.title)}</h2>
-              <p className="mx-auto mt-2 max-w-2xl text-white/70">{why.subtitle}</p>
+              <Kicker>{settings.why_kicker || "The AJ Classes Advantage"}</Kicker>
+              <h2 className="mt-4 font-display text-[32px] font-normal leading-10">{accentLast(why?.title || "Why Students Choose AJ Classes")}</h2>
+              <p className="mx-auto mt-2 max-w-2xl text-white/70">{why?.subtitle}</p>
             </Reveal>
             <div className="mt-10 space-y-8">
               {features.map((feature: any, index: number) => (
@@ -222,53 +257,45 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
-      ) : null}
 
-      {reviewsSection ? (
-        <section className="bg-paper py-16">
+      <section className="bg-paper py-16">
           <div className="container-aj">
             <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
               <div>
-                <Kicker dark>{parseExtra(reviewsSection.extra_json).kicker || settings.reviews_kicker || "Reviews"}</Kicker>
-                <h2 className="mt-3 font-display text-[32px] font-normal leading-10 text-plum">{accentLast(reviewsSection.title || settings.reviews_title || "Our Students Say We're Gamechangers")}</h2>
+                <Kicker dark>{parseExtra(reviewsSection?.extra_json).kicker || settings.reviews_kicker || "Reviews"}</Kicker>
+                <h2 className="mt-3 font-display text-[32px] font-normal leading-10 text-plum">{accentLast(reviewsSection?.title || settings.reviews_title || "Our Students Say We're Gamechangers")}</h2>
               </div>
-              <Link href={reviewsSection.cta_href || "/testimonials"} className="font-semibold text-orange">{reviewsSection.cta_label || settings.reviews_cta || "View More Testimonials"}</Link>
+              <Link href={reviewsSection?.cta_href || "/testimonials"} className="font-semibold text-orange">{reviewsSection?.cta_label || settings.reviews_cta || "View More Testimonials"}</Link>
             </div>
             {testimonials.some((item) => item.is_demo) ? <p className="mb-4 rounded-[10px] bg-cream px-4 py-3 text-sm font-semibold text-plum">Demonstration cards are shown until genuine student reviews are approved. They are not verified reviews.</p> : null}
             <ReviewRail items={testimonials.slice(0, 8)} />
           </div>
         </section>
-      ) : null}
 
-      {facultySection ? (
-        <section className="bg-plum py-16 text-white">
+      <section className="bg-plum py-16 text-white">
           <div className="container-aj">
             <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
               <div>
-                <Kicker>{parseExtra(facultySection.extra_json).kicker || settings.faculty_section_kicker || "Faculty"}</Kicker>
-                <h2 className="mt-3 font-display text-[32px] font-normal leading-10">{accentLast(facultySection.title || settings.faculty_section_title || "Industry Leaders Helping You Find The Way")}</h2>
+                <Kicker>{parseExtra(facultySection?.extra_json).kicker || settings.faculty_section_kicker || "Faculty"}</Kicker>
+                <h2 className="mt-3 font-display text-[32px] font-normal leading-10">{accentLast(facultySection?.title || settings.faculty_section_title || "Industry Leaders Helping You Find The Way")}</h2>
               </div>
-              <Link href={facultySection.cta_href || "/faculty"} className="text-orange">{facultySection.cta_label || settings.faculty_section_cta || "View More"}</Link>
+              <Link href={facultySection?.cta_href || "/faculty"} className="text-orange">{facultySection?.cta_label || settings.faculty_section_cta || "View More"}</Link>
             </div>
             <FacultyRail faculty={faculty} />
           </div>
         </section>
-      ) : null}
 
-      {eventsSection ? (
-        <section className="bg-plum py-16 text-white">
+      <section className="bg-plum py-16 text-white">
           <div className="container-aj">
-            <Kicker>{parseExtra(eventsSection.extra_json).kicker || "Campus"}</Kicker>
-            <h2 className="mt-4 font-display text-[32px] font-normal leading-10">{accentLast(eventsSection.title)}</h2>
-            <p className="mt-3 max-w-2xl text-white/70">{eventsSection.subtitle}</p>
+            <Kicker>{parseExtra(eventsSection?.extra_json).kicker || "Campus"}</Kicker>
+            <h2 className="mt-4 font-display text-[32px] font-normal leading-10">{accentLast(eventsSection?.title || "Building Futures Beyond The Classroom")}</h2>
+            <p className="mt-3 max-w-2xl text-white/70">{eventsSection?.subtitle}</p>
             <div className="mt-8"><EventRail items={events} /></div>
           </div>
         </section>
-      ) : null}
 
-      {!placement && numericStats.length ? <section className="py-16"><div className="container-aj"><Stats items={numericStats} /></div></section> : null}
+      {numericStats.length ? <section className="py-16"><div className="container-aj"><Stats items={numericStats} /></div></section> : null}
 
-      {faqs.length ? (
         <section className="bg-white py-16">
           <div className="container-aj grid items-start gap-10 lg:grid-cols-[.9fr_1.1fr]">
             <div>
@@ -279,15 +306,13 @@ export default async function HomePage() {
             <FaqList items={faqs} />
           </div>
         </section>
-      ) : null}
 
-      {counsellor ? (
       <section className="bg-cream py-16">
         <div className="container-aj grid gap-8 lg:grid-cols-2">
           <div>
-            <Kicker dark>{parseExtra(counsellor.extra_json).kicker || "Enquire"}</Kicker>
-            <h2 className="mt-4 font-display text-[32px] font-normal leading-10 text-plum">{accentLast(counsellor.title || settings.counsellor_title || "Our Counsellor Can Clear Any Confusion")}</h2>
-            <p className="mt-3 text-slate-600">{counsellor.subtitle || settings.counsellor_subtitle}</p>
+            <Kicker dark>{parseExtra(counsellor?.extra_json).kicker || "Enquire"}</Kicker>
+            <h2 className="mt-4 font-display text-[32px] font-normal leading-10 text-plum">{accentLast(counsellor?.title || settings.counsellor_title || "Our Counsellor Can Clear Any Confusion")}</h2>
+            <p className="mt-3 text-slate-600">{counsellor?.subtitle || settings.counsellor_subtitle}</p>
             <div className="mt-6"><EnquiryForm courses={courses} branches={branches} /></div>
           </div>
           <div className="space-y-4">
@@ -306,17 +331,14 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-      ) : null}
 
-      {community ? (
         <section className="bg-plum py-12 text-white lg:hidden">
           <div className="container-aj">
-            <h2 className="font-display text-3xl font-bold">{community.title}</h2>
-            <p className="mt-2 text-white/70">{community.subtitle}</p>
-            <div className="mt-5"><CommunityForm title={community.cta_label} /></div>
+            <h2 className="font-display text-3xl font-bold">{community?.title || "Join Our Community"}</h2>
+            <p className="mt-2 text-white/70">{community?.subtitle}</p>
+            <div className="mt-5"><CommunityForm title={community?.cta_label} /></div>
           </div>
         </section>
-      ) : null}
     </div>
   );
 }

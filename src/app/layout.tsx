@@ -53,7 +53,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" className={`${poppins.variable} ${montserrat.variable}`} data-scroll-behavior="smooth">
       <body
-        className={`${montserrat.className} antialiased`}
+        className={`${montserrat.className} ${poppins.variable} antialiased`}
         style={{
           ["--plum" as string]: theme.plum,
           ["--purple" as string]: theme.purple,

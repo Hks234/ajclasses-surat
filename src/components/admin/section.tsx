@@ -2,7 +2,7 @@
 
 import { Extras, ResourceManager, SecurityPanel, SettingsForm, StoragePanel, VideoManager } from "./shell";
 
-const resources = ["banners", "courses", "categories", "batches", "subjects", "chapters", "faculty", "achievements", "testimonials", "enquiries", "coupons", "branches", "announcements", "homepage", "faqs", "partners", "events", "emails", "students", "logs", "payments", "refunds", "media", "test-series"];
+const resources = ["banners", "courses", "categories", "batches", "books", "shipments", "subjects", "chapters", "faculty", "achievements", "testimonials", "enquiries", "coupons", "branches", "announcements", "homepage", "faqs", "partners", "events", "emails", "students", "logs", "payments", "refunds", "media", "test-series"];
 
 export function AdminSection({ section, settings, integrationStatus }: { section: string; settings: Record<string, string>; integrationStatus: any }) {
   if (resources.includes(section)) {

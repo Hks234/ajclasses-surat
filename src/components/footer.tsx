@@ -36,13 +36,13 @@ export function Footer({ branding, courses, branches }: { branding: any; courses
           <p className="font-display text-lg font-semibold">Courses</p>
           <div className="mt-3 space-y-2 text-sm text-white/80">
             {courses.slice(0, 9).map((course) => <Link key={course.id} className="block hover:text-orange" href={`/courses/${course.slug}`}>{course.name}</Link>)}
-            <Link className="block font-semibold text-orange" href="/shop">Buy a batch</Link>
+            <Link className="block font-semibold text-orange" href="/shop">Our Batches</Link>
           </div>
         </div>
         <div>
           <p className="font-display text-lg font-semibold">Quick links</p>
           <div className="mt-3 space-y-2 text-sm text-white/80">
-            {[["/about", "About"], ["/faculty", "Faculty"], ["/test-series", "Test Series"], ["/shop", "Shop"], ["/branches", "Branches"], ["/contact", "Contact"], ["/login", "Student login"], ["/privacy-policy", "Privacy policy"], ["/terms-and-conditions", "Terms"], ["/refund-policy", "Refund policy"]].map(([href, label]) => <Link key={href} href={href} className="block hover:text-orange">{label}</Link>)}
+            {[["/about", "About"], ["/faculty", "Faculty"], ["/test-series", "Test Series"], ["/shop", "Our Batches"], ["/books", "Books"], ["/branches", "Offline Classrooms"], ["/contact", "Contact"], ["/login", "Student login"], ["/privacy-policy", "Privacy policy"], ["/terms-and-conditions", "Terms"], ["/refund-policy", "Refund policy"]].map(([href, label]) => <Link key={href} href={href} className="block hover:text-orange">{label}</Link>)}
           </div>
         </div>
         <div>

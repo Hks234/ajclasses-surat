@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Download } from "lucide-react";
+import { courseDisplayName } from "@/lib/site-defaults";
 import { inr, initials } from "@/lib/utils";
 import { HScroll } from "./motion";
 
@@ -47,6 +48,57 @@ export function LogoStrip({ items }: { items: { id: string; name: string; logo_u
   );
 }
 
+const programmeColumns = [
+  { title: "Chartered Accountancy", test: (name: string) => name.startsWith("ca ") },
+  { title: "Cost & Management Accountancy", test: (name: string) => name.startsWith("cma ") },
+  { title: "Company Secretary", test: (name: string) => name.startsWith("cs ") },
+];
+
+const programmeOrder = [
+  "ca foundation", "ca intermediate", "ca final",
+  "cma foundation", "cma intermediate", "cma final",
+  "cs cseet", "cs executive", "cs professional",
+];
+
+function levelKey(name: string) {
+  return courseDisplayName(name).toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+export function ProgrammeGrid({ courses }: { courses: any[] }) {
+  const columns = programmeColumns.map((column) => ({
+    title: column.title,
+    items: courses
+      .map((course) => ({ ...course, name: courseDisplayName(course.name).replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim() }))
+      .filter((course) => column.test(levelKey(course.name)))
+      .sort((a, b) => programmeOrder.indexOf(levelKey(a.name)) - programmeOrder.indexOf(levelKey(b.name))),
+  }));
+  return (
+    <div className="mt-10 grid gap-6 lg:grid-cols-3">
+      {columns.map((column) => (
+        <div key={column.title} className="flex flex-col gap-4">
+          <p className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-orange">{column.title}</p>
+          {column.items.map((course) => (
+            <article key={course.id} className="flex flex-1 flex-col rounded-[12px] bg-white p-5 text-ink">
+              <h3 className="font-display text-[22px] font-semibold leading-7 text-ink">{course.name}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{course.description}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {course.learning_mode ? <span className="chip">{course.learning_mode}</span> : <span className="chip">Classroom & student portal</span>}
+                {Number(course.start_price) > 0 ? <span className="chip">From {inr(Number(course.start_price))}</span> : <span className="chip">Enquire for fees</span>}
+              </div>
+              <div className="mt-auto space-y-2 pt-4">
+                <Link href={`/courses/${course.slug}`} className="btn-orange w-full">Know More <ArrowRight size={16} /></Link>
+                {course.brochure_url
+                  ? <a href={course.brochure_url} className="btn-outline w-full">Download Brochure <Download size={16} /></a>
+                  : <Link href={`/enquiry?course=${encodeURIComponent(course.name)}`} className="btn-outline w-full">Enquire / Brochure <Download size={16} /></Link>}
+              </div>
+            </article>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ProgrammeRail({ courses }: { courses: any[] }) {
   return (
     <HScroll>
@@ -68,7 +120,7 @@ export function ProgrammeRail({ courses }: { courses: any[] }) {
             {course.brochure_url
               ? <a href={course.brochure_url} className="btn-outline w-full">Download Brochure <Download size={16} /></a>
               : <Link href={`/enquiry?course=${encodeURIComponent(course.name)}`} className="btn-outline w-full">Enquire / Brochure <Download size={16} /></Link>}
-            {Number(course.start_price) > 0 ? <Link href="/shop" className="block text-center text-sm font-semibold text-purple">Buy a batch</Link> : null}
+            {Number(course.start_price) > 0 ? <Link href="/shop" className="block text-center text-sm font-semibold text-purple">Our Batches</Link> : null}
           </div>
         </article>
       ))}
@@ -77,7 +129,7 @@ export function ProgrammeRail({ courses }: { courses: any[] }) {
 }
 
 export function ShopRail({ items }: { items: any[] }) {
-  if (!items.length) return <p className="rounded-[12px] bg-white/10 p-5 text-sm">Published batches with fees will appear here. Add a selling price under Batches in the admin portal.</p>;
+  if (!items.length) return <p className="rounded-[12px] bg-white/10 p-5 text-sm">Our batches appear here after a selling price is published under Batches in the admin portal.</p>;
   return (
     <HScroll>
       {items.map((item) => (

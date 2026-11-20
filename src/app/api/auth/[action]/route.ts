@@ -8,7 +8,7 @@ import { id, normalizeMobile, now, pageUrl, passwordOk, randomToken, sha256, val
 import { z } from "zod";
 
 async function userByEmail(email: string) {
-  return one<any>("SELECT * FROM users WHERE email = ? AND deleted_at IS NULL", [email.toLowerCase()]);
+  return one<any>("SELECT * FROM users WHERE LOWER(email) = ? AND deleted_at IS NULL", [email.toLowerCase()]);
 }
 
 export async function POST(req: Request, ctx: { params: Promise<{ action: string }> }) {
@@ -35,6 +35,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ action: string
     if (await userByEmail(email)) return bad("An account with this email already exists.", 409);
     const userId = id();
     const stamp = now();
+    const mailReady = Boolean(readIntegrations().smtpHost);
     await insert("users", {
       id: userId,
       email,
@@ -43,7 +44,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ action: string
       full_name: parsed.data.fullName.trim(),
       role: "student",
       status: "active",
-      email_verified: 0,
+      email_verified: mailReady ? 0 : 1,
       must_change_password: 0,
       google_sub: null,
       avatar_url: null,
@@ -52,11 +53,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ action: string
       deleted_at: null,
     });
     await insert("student_profiles", { user_id: userId, preferred_course: null, city: null, bio: null });
-    const token = randomToken();
-    await insert("email_verification_tokens", { id: id(), user_id: userId, token_hash: sha256(token), expires_at: new Date(Date.now() + 86400000).toISOString(), used_at: null });
-    await queueTemplate("verify_email", email, { student_name: parsed.data.fullName, verify_link: pageUrl(`/verify-email?token=${token}`) });
-    const devLink = process.env.NODE_ENV !== "production" && !readIntegrations().smtpHost ? pageUrl(`/verify-email?token=${token}`) : "";
-    return json({ ok: true, devLink });
+    if (mailReady) {
+      const token = randomToken();
+      await insert("email_verification_tokens", { id: id(), user_id: userId, token_hash: sha256(token), expires_at: new Date(Date.now() + 86400000).toISOString(), used_at: null });
+      await queueTemplate("verify_email", email, { student_name: parsed.data.fullName, verify_link: pageUrl(`/verify-email?token=${token}`) });
+    }
+    return json({ ok: true, devLink: "", ready: !mailReady });
   }
 
   if (action === "login") {
@@ -66,11 +68,23 @@ export async function POST(req: Request, ctx: { params: Promise<{ action: string
     if (await loginBlocked(email)) return bad("Too many attempts. Try again in 15 minutes.", 429);
     const user = await userByEmail(email);
     const match = user ? await checkPassword(password, user.password_hash || "") : false;
-    if (!user || !match || user.role !== portal) {
+    if (!user || user.role !== portal) {
+      await recordLogin(email, ip, false);
+      return bad("Email or password is incorrect.", 401);
+    }
+    if (!user.password_hash) {
+      await recordLogin(email, ip, false);
+      return bad("This email does not have a password yet. Use Forgot password to set one, then sign in with your email.", 401);
+    }
+    if (!match) {
       await recordLogin(email, ip, false);
       return bad("Email or password is incorrect.", 401);
     }
     if (user.status === "suspended") return bad("This account is suspended.", 403);
+    if (!user.email_verified) {
+      if (readIntegrations().smtpHost) return bad("Verify this email before signing in. Open the link sent by AJ Classes.", 403);
+      await run("UPDATE users SET email_verified = 1, updated_at = ? WHERE id = ?", [now(), user.id]);
+    }
     await recordLogin(email, ip, true);
     const issued = await createSession(user.id, { ip, userAgent: req.headers.get("user-agent") || "" });
     if (user.role === "admin") await run("UPDATE admin_users SET last_login_at = ? WHERE user_id = ?", [now(), user.id]);

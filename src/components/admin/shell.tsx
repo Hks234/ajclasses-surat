@@ -8,7 +8,7 @@ import { ImageUploadField, MediaLibraryUpload } from "./image-upload";
 const links = [
   ["dashboard", "Dashboard"], ["settings", "Website Settings"], ["branding", "Logo, Colours & Look"], ["homepage", "Homepage"],
     ["faqs", "FAQs"], ["partners", "Partner Logos"], ["events", "Events & Highlights"],
-    ["banners", "Promotional Banners"], ["courses", "Courses"], ["categories", "Categories"], ["batches", "Batches (sell)"],
+    ["banners", "Promotional Banners"], ["courses", "Courses"], ["categories", "Categories"], ["batches", "Batches (sell)"], ["books", "Books (sell)"], ["shipments", "Book Shipments"],
   ["subjects", "Subjects"], ["chapters", "Chapters"], ["videos", "Video Lectures"], ["storage", "Video Storage"],
   ["materials", "Notes & Materials"], ["test-series", "Test Series"], ["tests", "Tests & Questions"], ["students", "Students"],
   ["faculty", "Faculty"], ["achievements", "Achievements"], ["testimonials", "Testimonials"], ["enquiries", "Enquiries"],
@@ -56,6 +56,10 @@ export function ResourceManager({ resource }: { resource: string }) {
     for (const field of data.fields) {
       if (field.type === "boolean") payload[field.name] = form.get(field.name) === "on";
       else if (field.type === "image") payload[field.name] = form.get(field.name) || edit?.[field.name] || "";
+      else if (field.type === "password") {
+        const value = String(form.get(field.name) || "");
+        if (value) payload[field.name] = value;
+      }
       else payload[field.name] = form.get(field.name);
     }
     const res = await fetch(edit?.id ? `/api/admin/resource/${resource}/${edit.id}` : `/api/admin/resource/${resource}`, { method: edit?.id ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
@@ -86,7 +90,7 @@ export function ResourceManager({ resource }: { resource: string }) {
         const body = await res.json().catch(() => ({ error: "Could not save image." }));
         setMessage(res.ok ? "Image saved." : body.error || "Could not save image.");
         if (res.ok) await load();
-      }} /></div> : <label key={field.name} className="block"><span className="label">{field.label}</span>{field.type === "textarea" ? <textarea name={field.name} defaultValue={edit[field.name] || ""} className="field" rows={4} /> : field.type === "boolean" ? <input name={field.name} type="checkbox" defaultChecked={Boolean(edit[field.name])} /> : field.type === "select" ? <select name={field.name} defaultValue={edit[field.name] || ""} className="field">{(field.options || []).map((option: any) => <option key={option.value} value={option.value}>{option.label}</option>)}</select> : <input name={field.name} type={field.type === "number" || field.type === "money" ? "number" : field.type === "date" ? "date" : "text"} step="0.01" defaultValue={edit[field.name] ?? ""} className="field" />}</label>)}<div className="flex gap-2"><button className="btn-orange">Save</button><button type="button" className="btn-line" onClick={() => setEdit(null)}>Close</button></div></form> : null}
+      }} /></div> : <label key={field.name} className="block"><span className="label">{field.label}</span>{field.type === "textarea" ? <textarea name={field.name} defaultValue={edit[field.name] || ""} className="field" rows={4} /> : field.type === "boolean" ? <input name={field.name} type="checkbox" defaultChecked={edit.id ? Boolean(edit[field.name]) : field.name === "email_verified" || Boolean(edit[field.name])} /> : field.type === "select" ? <select name={field.name} defaultValue={edit[field.name] || (field.name === "status" ? "active" : "")} className="field">{(field.options || []).map((option: any) => <option key={option.value} value={option.value}>{option.label}</option>)}</select> : <input name={field.name} type={field.type === "number" || field.type === "money" ? "number" : field.type === "date" ? "date" : field.type === "password" ? "password" : field.type === "email" ? "email" : "text"} step="0.01" autoComplete={field.type === "password" ? "new-password" : undefined} placeholder={field.type === "password" && edit.id ? "Leave blank to keep the current password" : ""} defaultValue={field.type === "password" ? "" : edit[field.name] ?? ""} className="field" />}</label>)}<div className="flex gap-2"><button className="btn-orange">Save</button><button type="button" className="btn-line" onClick={() => setEdit(null)}>Close</button></div></form> : null}
     </div>
   );
 }

@@ -56,8 +56,8 @@ export const getBranding = cache(async () => {
     footer: s.footer_about || "",
     heroFormTitle: s.hero_form_title || "The right course can transform your future.",
     trustLine: s.trust_line || "",
-    shopTitle: s.shop_title || "Buy a published batch",
-    shopSubtitle: s.shop_subtitle || "Pay for a live batch and start learning in the student portal.",
+    shopTitle: s.shop_title || "Our Batches",
+    shopSubtitle: s.shop_subtitle || "Classroom and online batches published by AJ Classes.",
     navCoursesLabel: s.nav_courses_label || "View Courses",
     navShopLabel: s.nav_shop_label || "Shop",
     navResourcesLabel: s.nav_resources_label || "Resources",
@@ -89,8 +89,9 @@ function parseNav(value?: string) {
     ["/achievements", "Achievements"],
     ["/testimonials", "Testimonials"],
     ["/test-series", "Test Series"],
-    ["/shop", "Shop"],
-    ["/branches", "Branches"],
+    ["/shop", "Our Batches"],
+    ["/books", "Books"],
+    ["/branches", "Offline Classrooms"],
     ["/contact", "Contact"],
     ["/login", "Student Login"],
   ];
@@ -188,7 +189,14 @@ export async function getFaqs() {
   }
 }
 
+export async function getBooks() {
+  return all<any>("SELECT * FROM books WHERE deleted_at IS NULL AND status = 'published' AND price_paise > 0 ORDER BY sort_order, title");
+}
+
 export async function getSellable(type: string, itemId: string) {
+  if (type === "book") {
+    return one<any>("SELECT * FROM books WHERE id = ? AND deleted_at IS NULL AND status = 'published' AND price_paise > 0", [itemId]);
+  }
   if (type === "test_series") {
     return one<any>("SELECT t.*, c.name AS course_name FROM test_series t LEFT JOIN courses c ON c.id = t.course_id WHERE t.id = ? AND t.deleted_at IS NULL AND t.status = 'published'", [itemId]);
   }

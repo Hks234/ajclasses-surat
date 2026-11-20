@@ -22,6 +22,17 @@ function Empty({ text }: { text: string }) {
   return <p className="card p-6 text-slate-600">{text}</p>;
 }
 
+function ShippingNote({ raw }: { raw?: string | null }) {
+  if (!raw) return null;
+  try {
+    const ship = JSON.parse(raw);
+    if (!ship?.line1) return null;
+    return <p className="mt-2 text-sm text-slate-600">Shipping to {ship.name}, {ship.line1}{ship.line2 ? `, ${ship.line2}` : ""}, {ship.city}, {ship.state} {ship.pincode}</p>;
+  } catch {
+    return null;
+  }
+}
+
 export default async function StudentSection({ params }: { params: Promise<{ section: string }> }) {
   await ready();
   const session = await getSession();
@@ -85,7 +96,8 @@ export default async function StudentSection({ params }: { params: Promise<{ sec
             <article key={row.id} className="card p-5">
               <p className="font-bold text-navy">{row.status} · {inr(row.total_paise)}</p>
               <p className="text-sm text-slate-500">{String(row.created_at).slice(0, 10)}</p>
-              <ul className="mt-2 text-sm">{row.items.map((item: any) => <li key={item.id}>{item.title}</li>)}</ul>
+              <ul className="mt-2 text-sm">{row.items.map((item: any) => <li key={item.id}>{item.title}{item.item_type === "book" ? " · physical shipping" : ""}</li>)}</ul>
+              <ShippingNote raw={row.shipping_json} />
             </article>
           )) : <Empty text="No purchases yet." />}
         </div>

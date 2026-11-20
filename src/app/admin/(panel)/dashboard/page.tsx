@@ -31,6 +31,8 @@ export default async function Dashboard() {
       </div>
       <div className="mt-6 flex flex-wrap gap-4 text-sm font-bold">
         <Link href="/admin/batches" className="text-orange">Sell a batch (set price and publish)</Link>
+        <Link href="/admin/books" className="text-orange">Sell a book (physical shipping)</Link>
+        <Link href="/admin/shipments" className="text-orange">Book shipments</Link>
         <Link href="/admin/courses" className="text-orange">Edit courses on the website</Link>
         <Link href="/admin/homepage" className="text-orange">Edit homepage sections</Link>
         <Link href="/admin/branding" className="text-orange">Logo and colours</Link>

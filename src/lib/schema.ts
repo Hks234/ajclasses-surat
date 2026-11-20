@@ -579,6 +579,36 @@ export const extraSchemaStatements = [
     enabled INTEGER NOT NULL DEFAULT 1,
     created_at VARCHAR(40) NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS books (
+    id VARCHAR(36) PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    image_url TEXT,
+    price_paise INTEGER NOT NULL DEFAULT 0,
+    compare_at_paise INTEGER,
+    stock INTEGER NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'draft',
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at VARCHAR(40) NOT NULL,
+    deleted_at VARCHAR(40)
+  )`,
+  `CREATE TABLE IF NOT EXISTS book_shipments (
+    id VARCHAR(36) PRIMARY KEY,
+    purchase_id VARCHAR(36) NOT NULL,
+    book_id VARCHAR(36) NOT NULL,
+    title VARCHAR(220) NOT NULL,
+    buyer_name VARCHAR(160) NOT NULL,
+    phone VARCHAR(40) NOT NULL,
+    line1 TEXT NOT NULL,
+    line2 TEXT,
+    city VARCHAR(120) NOT NULL,
+    state VARCHAR(120) NOT NULL,
+    pincode VARCHAR(12) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'pending',
+    tracking VARCHAR(120),
+    notes TEXT,
+    created_at VARCHAR(40) NOT NULL
+  )`,
 ];
 
 export const columnPatches: [string, string, string][] = [
@@ -591,4 +621,5 @@ export const columnPatches: [string, string, string][] = [
   ["achievements", "rank_line", "VARCHAR(180)"],
   ["media_assets", "file_data", "LONGBLOB"],
   ["media_assets", "file_b64", "LONGTEXT"],
+  ["purchases", "shipping_json", "TEXT"],
 ];

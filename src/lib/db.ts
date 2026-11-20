@@ -35,6 +35,17 @@ export function dbMode() {
   return mode;
 }
 
+export async function closeDb() {
+  if (pool) {
+    const current = pool;
+    pool = null;
+    await current.end();
+  }
+  sqlite = null;
+  phase = "idle";
+  initPromise = null;
+}
+
 function ensureDir(dir: string) {
   try {
     fs.mkdirSync(dir, { recursive: true });
@@ -195,15 +206,6 @@ async function createMysqlPool(url: string) {
   throw lastError;
 }
 
-async function tableCount() {
-  if (mode === "mysql") {
-    const tables = await allNow<Record<string, string>>("SHOW TABLES", []);
-    return tables.length;
-  }
-  const rows = await allNow<{ n: number }>("SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'", []);
-  return Number(rows[0]?.n || 0);
-}
-
 async function runSafe(statement: string) {
   try {
     await run(statement);
@@ -214,18 +216,19 @@ async function runSafe(statement: string) {
   }
 }
 
+const schemaRevision = "core-2026-11-20-tidb-media";
+
 async function migrate() {
-  try {
-    if ((await tableCount()) < 40) {
-      for (const statement of schemaStatements) await runSafe(statement);
-    }
-  } catch {
-    for (const statement of schemaStatements) await runSafe(statement);
-  }
+  await runSafe(schemaStatements[0]);
+  const applied = await one<{ id: string }>("SELECT id FROM schema_migrations WHERE id = ?", [schemaRevision]);
+  if (applied) return;
+  for (const statement of schemaStatements) await runSafe(statement);
   for (const statement of extraSchemaStatements) await runSafe(statement);
   for (const [table, column, type] of columnPatches) {
     await runSafe(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
   }
+  const marked = await one("SELECT id FROM schema_migrations WHERE id = ?", [schemaRevision]);
+  if (!marked) await run("INSERT INTO schema_migrations (id, applied_at) VALUES (?, ?)", [schemaRevision, new Date().toISOString()]);
 }
 
 export async function ready() {
@@ -251,6 +254,8 @@ export async function ready() {
     await migrate();
     const { seed } = await import("./seed");
     await seed();
+    const { backfillMediaToDatabase } = await import("./files");
+    await backfillMediaToDatabase();
     phase = "ready";
   })();
   try {

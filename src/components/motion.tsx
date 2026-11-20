@@ -82,8 +82,8 @@ export function HScroll({ children, light = false }: { children: React.ReactNode
   };
   return (
     <div className="relative">
-      <button type="button" className={`slider-arrow ${light ? "light" : ""} left-0`} onClick={() => go(-1)} aria-label="Previous"><ChevronLeft size={20} /></button>
-      <button type="button" className={`slider-arrow ${light ? "light" : ""} right-0`} onClick={() => go(1)} aria-label="Next"><ChevronRight size={20} /></button>
+      <button type="button" className={`slider-arrow ${light ? "light" : ""} left-1`} onClick={() => go(-1)} aria-label="Previous"><ChevronLeft size={20} /></button>
+      <button type="button" className={`slider-arrow ${light ? "light" : ""} right-1`} onClick={() => go(1)} aria-label="Next"><ChevronRight size={20} /></button>
       <div ref={ref} className="programme-rail px-8">{children}</div>
     </div>
   );

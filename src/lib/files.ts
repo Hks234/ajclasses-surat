@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { insert, storageRoot } from "./db";
+import { all, insert, run, storageRoot } from "./db";
 import { id, now } from "./utils";
 
 type SniffedFile = {
@@ -66,40 +66,38 @@ export async function savePublicMedia(buffer: Buffer, originalName: string, crea
   const filename = `${mediaId}${kind.ext}`;
   const relative = path.join("media", filename);
   const payload = kind.ext === ".svg" && typeof kind.svg === "string" ? Buffer.from(kind.svg, "utf8") : buffer;
-  const full = path.join(storageRoot(), relative);
-  try {
-    fs.mkdirSync(path.dirname(full), { recursive: true });
-    fs.writeFileSync(full, payload);
-  } catch {}
-  const fileB64 = payload.toString("base64");
-  const row = {
+  await insert("media_assets", {
     id: mediaId,
     filename,
     original_name: originalName.slice(0, 180),
     mime: kind.mime,
     size_bytes: payload.length,
     path: relative,
-    file_b64: fileB64,
+    file_data: payload,
+    file_b64: payload.toString("base64"),
     alt,
     folder: "library",
     is_public: 1,
     created_by: createdBy,
     created_at: now(),
-  };
-  try {
-    await insert("media_assets", { ...row, file_data: payload });
-  } catch {
-    try {
-      await insert("media_assets", row);
-    } catch {
-      const { file_b64: _unused, ...legacy } = row;
-      void _unused;
-      await insert("media_assets", { ...legacy, file_data: payload });
-    }
+  });
+  return { id: mediaId, url: `/api/media/public/${mediaId}`, mime: kind.mime, size: payload.length };
+}
+
+export async function backfillMediaToDatabase() {
+  const rows = await all<{ id: string; path: string; filename: string; file_data: unknown; file_b64: string | null }>(
+    "SELECT id, path, filename, file_data, file_b64 FROM media_assets WHERE file_b64 IS NULL OR file_b64 = ''",
+  );
+  let saved = 0;
+  for (const row of rows) {
+    const fromColumn = asFileBuffer(row.file_data);
+    const disk = mediaDiskPath(row.path || "", row.filename);
+    const fromDisk = !fromColumn?.length && disk && fs.existsSync(disk) ? fs.readFileSync(disk) : null;
+    const file = fromColumn?.length ? fromColumn : fromDisk;
+    if (!file?.length) continue;
+    await run("UPDATE media_assets SET file_data = ?, file_b64 = ?, size_bytes = ? WHERE id = ?", [file, file.toString("base64"), file.length, row.id]);
+    saved += 1;
   }
-  const url =
-    payload.length <= 350 * 1024
-      ? `data:${kind.mime};base64,${fileB64}`
-      : `/api/media/public/${mediaId}`;
-  return { id: mediaId, url, mime: kind.mime, size: payload.length };
+  if (saved) console.log(`[aj-classes] Stored ${saved} image file(s) in TiDB.`);
+  return saved;
 }

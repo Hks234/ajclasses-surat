@@ -30,11 +30,11 @@ export function LoginForm({ portal = "student" }: { portal?: "student" | "admin"
   }
   return (
     <form onSubmit={onSubmit} className="card space-y-4 p-6">
-      <label className="block"><span className="label">Email</span><input name="email" type="email" required className="field" /></label>
-      <label className="block"><span className="label">Password</span><input name="password" type="password" required className="field" /></label>
+      {portal === "student" ? <p className="text-sm text-slate-600">Student login uses your email and password. Create an account if you do not have one yet.</p> : null}
+      <label className="block"><span className="label">Email</span><input name="email" type="email" autoComplete="email" required className="field" /></label>
+      <label className="block"><span className="label">Password</span><input name="password" type="password" autoComplete="current-password" required className="field" /></label>
       {error ? <p className="text-sm font-semibold text-red-700">{error}</p> : null}
-      <button className="btn-orange w-full" disabled={pending}>{pending ? "Signing in…" : "Sign in"}</button>
-      {portal === "student" ? <button type="button" className="btn-line w-full" onClick={async () => { try { const data = await post("google", {}); window.location.href = data.url; } catch (err) { setError(err instanceof Error ? err.message : "Google sign-in is unavailable"); } }}>Continue with Google</button> : null}
+      <button className="btn-orange w-full" disabled={pending}>{pending ? "Signing in…" : "Sign in with email"}</button>
       <div className="flex justify-between text-sm font-semibold"><Link href="/forgot-password">Forgot password</Link>{portal === "student" ? <Link href="/register">Create account</Link> : null}</div>
     </form>
   );
@@ -48,7 +48,7 @@ export function RegisterForm() {
     const form = new FormData(event.currentTarget);
     try {
       const data = await post("register", { fullName: form.get("fullName"), email: form.get("email"), mobile: form.get("mobile"), password: form.get("password"), confirm: form.get("confirm") });
-      setMessage(data.devLink ? `Account created. Email delivery is not configured on this computer, so use this verification link: ${data.devLink}` : "Account created. Check your email to verify it before purchasing.");
+      setMessage(data.ready ? "Account created. Sign in with this email and password." : "Account created. Check your email to verify it, then sign in with this email and password.");
     } catch (err) { setError(err instanceof Error ? err.message : "Could not register"); }
   }
   return (

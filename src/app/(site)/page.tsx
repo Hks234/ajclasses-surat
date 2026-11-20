@@ -5,9 +5,9 @@ import { ready } from "@/lib/db";
 import { BannerSlider, EnquiryForm, Stats } from "@/components/widgets";
 import { telLink, waLink } from "@/lib/utils";
 import { HeroFloats, Reveal } from "@/components/motion";
-import { AchieverRail, CommunityForm, EventRail, FacultyRail, FaqList, LogoStrip, ProgrammeRail, ReviewRail, ShopRail } from "@/components/site-ui";
+import { CommunityForm, EventRail, FacultyRail, FaqList, LogoStrip, ProgrammeGrid, ReviewRail, ShopRail } from "@/components/site-ui";
 import { accentLast, Kicker } from "@/components/heading";
-import { defaultBranches, defaultCourses, defaultFaculty, defaultFaqs, defaultFeatures, defaultHero, defaultSections, defaultTestimonials } from "@/lib/site-defaults";
+import { defaultBranches, defaultCourses, defaultFaculty, defaultFaqs, defaultHero, defaultSections, defaultTestimonials, heroHighlights, mergeProgrammeCourses, publicBatchCta, publicBatchSubtitle, publicBatchTitle, whyCards } from "@/lib/site-defaults";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -71,7 +71,7 @@ export default async function HomePage() {
     eventsSection = loaded[9] || defaultSections.events;
     reviewsSection = loaded[10] || defaultSections.reviews;
     facultySection = loaded[11] || defaultSections.faculty_home;
-    courses = (loaded[12] as any[]).length ? loaded[12] as any[] : defaultCourses;
+    courses = mergeProgrammeCourses(loaded[12] as any[]);
     faculty = (loaded[13] as any[]).length ? loaded[13] as any[] : defaultFaculty;
     achievements = loaded[14] as any[];
     testimonials = (loaded[15] as any[]).length ? loaded[15] as any[] : defaultTestimonials;
@@ -89,12 +89,8 @@ export default async function HomePage() {
   const extra = parseExtra(hero?.extra_json);
   const ctas = extra.ctas || [];
   const whyExtra = parseExtra(why?.extra_json);
-  const features = Array.isArray(whyExtra) && whyExtra.length ? whyExtra : defaultFeatures;
-  const trust = extra.trust || [
-    { label: settings.trust_line || "Trusted coaching for CA, CS and CMA" },
-    { label: "Classroom batches in Surat" },
-    { label: "Online student portal for purchased batches" },
-  ];
+  const features = whyCards(whyExtra);
+  const trust = heroHighlights(extra.trust);
   const heroStats = extra.stats || [
     settings.stat_students ? { value: settings.stat_students, label: "Total Students" } : { value: String(branches.length || 3), label: "Surat Branches" },
     settings.stat_courses ? { value: settings.stat_courses, label: "Courses Offered" } : { value: String(courses.length), label: "Courses Offered" },
@@ -108,15 +104,14 @@ export default async function HomePage() {
     { label: "Years of Experience", value: settings.stat_years },
   ].filter((item) => item.value && Number(item.value) > 0);
   const formTitle = extra.form_title || settings.hero_form_title || "The right course can transform your future.";
-  const allCtas = ctas.length ? ctas : [{ label: hero?.cta_label || "Explore Our Courses", href: hero?.cta_href || "/courses" }];
+  const allCtas = (ctas.length ? ctas : [{ label: hero?.cta_label || "Explore Our Courses", href: hero?.cta_href || "/courses" }]).map((item: any, index: number) => ({
+    label: item.label || (index ? "Enquire Now" : "Explore Our Courses"),
+    href: item.href && item.href !== "#" ? item.href : (index ? "/enquiry" : "/courses"),
+  }));
   const primaryCta = allCtas[0];
   const secondaryCta = allCtas[1];
-  const alumniLogos = partners.filter((item) => item.kind === "alumni");
-  const universityLogos = partners.filter((item) => item.kind === "university");
   const awardLogos = partners.filter((item) => item.kind === "award");
   const programmeExtra = parseExtra(programmes?.extra_json);
-  const placementExtra = parseExtra(placement?.extra_json);
-  const placementStats = Array.isArray(placementExtra.stats) && placementExtra.stats.length ? placementExtra.stats : heroStats;
 
   return (
     <div>
@@ -170,7 +165,7 @@ export default async function HomePage() {
           <p className="mx-auto mt-3 max-w-2xl text-white/70">{programmes?.subtitle}</p>
         </div>
         <div className="container-aj">
-          <ProgrammeRail courses={courses} />
+          <ProgrammeGrid courses={courses} />
           <div className="mt-4 text-center">
             <Link href={programmes?.cta_href || "/courses"} className="btn-ghost">{programmes?.cta_label || "View All Programmes"}</Link>
           </div>
@@ -179,47 +174,15 @@ export default async function HomePage() {
 
       <section className="bg-plum pb-16 text-white">
         <div className="container-aj text-center">
-          <Kicker>{parseExtra(shopSection?.extra_json).kicker || "Shop"}</Kicker>
-          <h2 className="mt-4 font-display text-[32px] font-normal leading-10">{accentLast(shopSection?.title || settings.shop_title || "Buy a published batch")}</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-white/70">{shopSection?.subtitle || settings.shop_subtitle}</p>
+          <Kicker>{parseExtra(shopSection?.extra_json).kicker === "Shop" ? "Our Batches" : parseExtra(shopSection?.extra_json).kicker || "Our Batches"}</Kicker>
+          <h2 className="mt-4 font-display text-[32px] font-normal leading-10">{accentLast(publicBatchTitle(shopSection?.title || settings.shop_title))}</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-white/70">{publicBatchSubtitle(shopSection?.subtitle || settings.shop_subtitle)}</p>
         </div>
         <div className="container-aj mt-4">
           <ShopRail items={shop} />
-          <div className="mt-6 text-center"><Link href={shopSection?.cta_href || "/shop"} className="btn-orange">{shopSection?.cta_label || "Open the shop"}</Link></div>
+          <div className="mt-6 text-center"><Link href={shopSection?.cta_href || "/shop"} className="btn-orange">{publicBatchCta(shopSection?.cta_label)}</Link></div>
         </div>
       </section>
-
-      <section className="bg-white py-16">
-        <div className="container-aj text-center">
-          <Kicker dark>{parseExtra(alumni?.extra_json).kicker || "Classroom & Online"}</Kicker>
-          <h2 className="mt-4 font-display text-[32px] font-normal leading-10 text-plum">{accentLast(alumni?.title || "Our Students Learn Here")}</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-slate-600">{alumni?.subtitle}</p>
-        </div>
-        {alumniLogos.length ? <LogoStrip items={alumniLogos} /> : null}
-        {universityLogos.length ? <LogoStrip items={universityLogos} /> : null}
-      </section>
-
-      <section className="bg-plum py-16 text-white">
-          <div className="container-aj grid items-start gap-10 lg:grid-cols-[.9fr_1.1fr]">
-            <div>
-              <Kicker>{placementExtra.kicker || "Results"}</Kicker>
-              <h2 className="mt-4 font-display text-[32px] font-normal leading-10">{accentLast(placement?.title || "Classroom Coaching, Online Learning")}</h2>
-              <p className="mt-3 text-white/70">{placement?.subtitle}</p>
-              {placement?.cta_href ? <Link href={placement.cta_href} className="btn-ghost mt-6">{placement.cta_label || "View more"}</Link> : null}
-            </div>
-            <div className="grid gap-6 sm:grid-cols-2">
-              {placementStats.map((item: any) => (
-                <div key={item.label} className="rounded-[12px] bg-white/5 p-5">
-                  <p className="text-sm text-white/70">{item.label}</p>
-                  <p className="mt-2 font-display text-[32px] font-bold leading-8 tracking-[-0.02em]">{item.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="container-aj mt-10">
-            <AchieverRail items={achievements.slice(0, 8)} />
-          </div>
-        </section>
 
       {awardLogos.length ? (
         <section className="bg-white py-12">
@@ -237,20 +200,16 @@ export default async function HomePage() {
           <div className="container-aj">
             <Reveal className="text-center">
               <Kicker>{settings.why_kicker || "The AJ Classes Advantage"}</Kicker>
-              <h2 className="mt-4 font-display text-[32px] font-normal leading-10">{accentLast(why?.title || "Why Students Choose AJ Classes")}</h2>
+              <h2 className="mt-4 font-display text-[32px] font-normal leading-10">{accentLast(/why students choose aj classes/i.test(why?.title || "") ? "Why Students Choose Us" : (why?.title || "Why Students Choose Us"))}</h2>
               <p className="mx-auto mt-2 max-w-2xl text-white/70">{why?.subtitle}</p>
             </Reveal>
-            <div className="mt-10 space-y-8">
+            <div className="mt-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
               {features.map((feature: any, index: number) => (
                 <Reveal key={feature.title} delay={index * 40}>
-                  <article className={`advantage-card rounded-[18px] bg-white p-5 text-ink ${index % 2 ? "reverse" : ""}`}>
-                    <div className="overflow-hidden rounded-[12px] bg-paper">
-                      {feature.image ? <img src={feature.image} alt="" className="h-64 w-full object-cover" /> : <div className="flex h-64 items-center justify-center font-display text-6xl font-bold text-orange">{String(index + 1).padStart(2, "0")}</div>}
-                    </div>
-                    <div>
-                      <h3 className="font-display text-2xl font-semibold text-plum">{feature.title}</h3>
-                      <p className="mt-3 text-sm leading-7 text-slate-600">{feature.body}</p>
-                    </div>
+                  <article className="h-full rounded-[16px] bg-white p-5 text-ink">
+                    <p className="font-display text-3xl font-bold text-orange">{String(index + 1).padStart(2, "0")}</p>
+                    <h3 className="mt-3 font-display text-xl font-semibold text-plum">{feature.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{feature.body}</p>
                   </article>
                 </Reveal>
               ))}

@@ -1,7 +1,8 @@
 import { getSession } from "@/lib/auth";
-import { createCheckout, quoteProduct, verifyDemo, verifyRazorpay } from "@/lib/commerce";
+import { createCheckout, quoteProduct, readShipping, verifyDemo, verifyRazorpay, type CheckoutType } from "@/lib/commerce";
 import { ready } from "@/lib/db";
 import { bad, json, originBlock } from "@/lib/http";
+import { readIntegrations } from "@/lib/secrets";
 
 export async function POST(req: Request) {
   const blocked = originBlock(req);
@@ -9,11 +10,13 @@ export async function POST(req: Request) {
   await ready();
   const session = await getSession();
   if (!session || session.role !== "student") return bad("Sign in as a student to continue.", 401);
-  if (!session.emailVerified) return bad("Verify your email before purchasing.");
+  if (!session.emailVerified && readIntegrations().smtpHost) return bad("Verify your email before purchasing.");
   const body = await req.json().catch(() => ({}));
-  const type = body.type === "test_series" ? "test_series" : "batch";
+  const type: CheckoutType = body.type === "test_series" ? "test_series" : body.type === "book" ? "book" : "batch";
   const itemId = String(body.itemId || "");
   const coupon = body.coupon ? String(body.coupon) : undefined;
+  const shipping = type === "book" ? readShipping(body) : null;
+  if (shipping && "error" in shipping && body.action !== "quote" && body.action !== "verify-demo" && body.action !== "verify-razorpay") return bad(shipping.error);
   if (body.action === "quote") {
     const quote = await quoteProduct(type, itemId, session.id, coupon);
     if ("error" in quote && quote.error) return bad(quote.error);
@@ -29,7 +32,7 @@ export async function POST(req: Request) {
     if ("error" in result && result.error) return bad(result.error);
     return json({ ok: true });
   }
-  const created = await createCheckout(session.id, type, itemId, coupon);
+  const created = await createCheckout(session.id, type, itemId, coupon, shipping && "shipping" in shipping ? shipping.shipping : undefined);
   if ("error" in created && created.error) return bad(created.error);
   return json(created);
 }

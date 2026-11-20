@@ -1,6 +1,7 @@
-import { insert, one, run } from "./db";
-import { now } from "./utils";
 import bcrypt from "bcryptjs";
+import { insert, one, run } from "./db";
+import { readIntegrations } from "./secrets";
+import { now } from "./utils";
 
 const permissions = [
   ["dashboard.view", "View the admin dashboard"],
@@ -62,7 +63,7 @@ const categories = [
   ["cma-foundation", "CMA Foundation", "The foundation level of the Cost and Management Accountancy course."],
   ["cma-inter", "CMA Intermediate", "The intermediate level of the Cost and Management Accountancy course."],
   ["cma-final", "CMA Final", "The final level of the Cost and Management Accountancy course."],
-  ["cs-eet", "CS-EET", "The CS Executive Entrance Test."],
+  ["cs-eet", "CS CSEET", "The Company Secretary Executive Entrance Test."],
   ["cs-executive", "CS Executive", "The executive level of the Company Secretary course."],
   ["cs-professional", "CS Professional", "The professional level of the Company Secretary course."],
 ];
@@ -159,14 +160,14 @@ export async function seed() {
   }
 
   const features = [
-    ["Expert Guidance", "Classes led by the AJ Classes faculty team."],
-    ["Structured Learning", "Subjects, chapters and lessons arranged batch by batch."],
-    ["Concept-Based Teaching", "Lectures focused on understanding the concept before the question."],
-    ["Quality Study Material", "Notes and practice files released inside the student portal."],
-    ["Regular Test Series", "Objective tests with instant scoring for published test series."],
-    ["Experienced Faculty", "Faculty profiles are published and edited by the institute."],
-    ["Flexible Online Learning", "Purchased lectures can be resumed on mobile and desktop."],
-    ["Dedicated Student Support", "Enquiries and support requests reach the institute team."],
+    ["India's Youngest CA, CS & CMA", "Aditya Jhawar holds CA, CS and CMA and teaches the programmes himself."],
+    ["One Mentor, Three Courses", "Chartered Accountancy, Company Secretary and Cost Accountancy under one faculty team."],
+    ["Concepts Before Questions", "Every topic is explained for understanding, then practised the way the exam asks it."],
+    ["Surat Classrooms", "Offline batches at Parvat Patiya, Vesu and Pal, with a student portal after you buy a batch."],
+    ["Notes With the Batch", "Study material is released with the lectures, not sold as a separate download."],
+    ["Exam Practice", "Test series and chapter practice so students know where they stand before the attempt."],
+    ["Level by Level", "Foundation, intermediate and final for CA and CMA, and CSEET, Executive and Professional for CS."],
+    ["A Counsellor on Call", "Branch desks answer course, batch and book questions before you join."],
   ];
   const hero = await one("SELECT id FROM homepage_sections WHERE section_key = ?", ["hero"]);
   if (!hero) {
@@ -191,16 +192,16 @@ export async function seed() {
           { label: "Student Login", href: "/login" },
         ],
         trust: [
-          { label: "Classroom batches in Parvat Patiya, Vesu and Pal" },
-          { label: "Student portal for purchased lectures and notes" },
-          { label: "CA, CS and CMA programmes taught by Aditya Jhawar" },
+          { label: "India's youngest CA, CS and CMA — Aditya Jhawar teaches the course himself" },
+          { label: "One mentor for Chartered Accountancy, Company Secretary and Cost Accountancy" },
+          { label: "Clear concepts, exam practice and personal guidance at every level" },
         ],
       }),
     });
     await insert("homepage_sections", {
       id: "section-why",
       section_key: "why",
-      title: "Why Students Choose AJ Classes",
+      title: "Why Students Choose Us",
       subtitle: "A structured coaching experience for CA, CS and CMA.",
       body: "",
       image_url: "",
@@ -393,8 +394,8 @@ async function ensureSiteExtras(stamp: string) {
     color_plum: "#071A36",
     color_purple: "#1A4BCC",
     color_orange: "#EE8F22",
-    shop_title: "Buy a published batch",
-    shop_subtitle: "Pay for a live batch and start learning in the student portal.",
+    shop_title: "Our Batches",
+    shop_subtitle: "Classroom and online batches published by AJ Classes. Choose a batch and continue in the student portal after payment.",
     nav_courses_label: "View Courses",
     nav_shop_label: "Shop",
     nav_resources_label: "Resources",
@@ -425,8 +426,9 @@ async function ensureSiteExtras(stamp: string) {
       { href: "/achievements", label: "Achievements" },
       { href: "/testimonials", label: "Testimonials" },
       { href: "/test-series", label: "Test Series" },
-      { href: "/shop", label: "Shop" },
-      { href: "/branches", label: "Branches" },
+      { href: "/shop", label: "Our Batches" },
+      { href: "/books", label: "Books" },
+      { href: "/branches", label: "Offline Classrooms" },
       { href: "/contact", label: "Contact" },
       { href: "/login", label: "Student Login" },
     ]),
@@ -473,7 +475,7 @@ async function ensureSiteExtras(stamp: string) {
       cta_label: "",
       cta_href: "",
       background: "",
-      enabled: 1,
+      enabled: 0,
       sort_order: 4,
       extra_json: JSON.stringify({ kicker: "Classroom & Online" }),
     },
@@ -522,16 +524,16 @@ async function ensureSiteExtras(stamp: string) {
     {
       id: "section-shop",
       section_key: "shop",
-      title: "Buy a published batch",
-      subtitle: "Pay for a live batch and start learning in the student portal.",
+      title: "Our Batches",
+      subtitle: "Classroom and online batches published by AJ Classes. Choose a batch and continue in the student portal after payment.",
       body: "",
       image_url: "",
-      cta_label: "Open the shop",
+      cta_label: "View our batches",
       cta_href: "/shop",
       background: "",
       enabled: 1,
       sort_order: 5,
-      extra_json: JSON.stringify({ kicker: "Shop" }),
+      extra_json: JSON.stringify({ kicker: "Our Batches" }),
     },
     {
       id: "section-placement",
@@ -543,7 +545,7 @@ async function ensureSiteExtras(stamp: string) {
       cta_label: "View Achievements",
       cta_href: "/achievements",
       background: "",
-      enabled: 1,
+      enabled: 0,
       sort_order: 6,
       extra_json: JSON.stringify({ kicker: "Results" }),
     },
@@ -613,20 +615,98 @@ async function ensureSiteExtras(stamp: string) {
   if (heroRow) {
     let extra: any = {};
     try { extra = JSON.parse(heroRow.extra_json || "{}") || {}; } catch { extra = {}; }
-    if (!extra.trust) {
+    const labels = Array.isArray(extra.trust) ? extra.trust.map((item: any) => String(item?.label || "")) : [];
+    const retiredTrust = /classroom batches in parvat|student portal for purchased|programmes taught by aditya jhawar/i;
+    if (!labels.length || labels.some((label: string) => retiredTrust.test(label))) {
       extra.highlight = extra.highlight || "CA, CS & CMA";
       extra.form_title = extra.form_title || "The right course can transform your future.";
       extra.trust = [
-        { label: "Classroom batches in Parvat Patiya, Vesu and Pal" },
-        { label: "Student portal for purchased lectures and notes" },
-        { label: "CA, CS and CMA programmes taught by Aditya Jhawar" },
+        { label: "India's youngest CA, CS and CMA — Aditya Jhawar teaches the course himself" },
+        { label: "One mentor for Chartered Accountancy, Company Secretary and Cost Accountancy" },
+        { label: "Clear concepts, exam practice and personal guidance at every level" },
       ];
-      extra.ctas = extra.ctas || [
+      extra.ctas = extra.ctas?.length ? extra.ctas : [
         { label: heroRow.cta_label || "Explore Our Courses", href: heroRow.cta_href || "/courses" },
         { label: "Enquire Now", href: "/enquiry" },
       ];
       await run("UPDATE homepage_sections SET extra_json = ? WHERE id = ?", [JSON.stringify(extra), heroRow.id]);
     }
+  }
+  await run("UPDATE courses SET name = ?, seo_title = ?, seo_description = ?, description = ?, updated_at = ? WHERE slug = ? AND name IN ('CS-EET', 'CS EET', 'CSEET')", [
+    "CS CSEET",
+    "CS CSEET Coaching | AJ Classes",
+    "CS CSEET coaching at AJ Classes, Aditya Jhawar Education, Surat.",
+    "The Company Secretary Executive Entrance Test.",
+    stamp,
+    "cs-eet",
+  ]);
+  await run("UPDATE course_categories SET name = ?, short_description = ? WHERE slug = ? AND name IN ('CS-EET', 'CS EET', 'CSEET')", [
+    "CS CSEET",
+    "The Company Secretary Executive Entrance Test.",
+    "cs-eet",
+  ]);
+  const navRow = await one<{ setting_value: string }>("SELECT setting_value FROM website_settings WHERE setting_key = ?", ["nav_resources_json"]);
+  if (navRow && !String(navRow.setting_value || "").includes('"/books"') && !String(navRow.setting_value || "").includes("'/books'")) {
+    await run("UPDATE website_settings SET setting_value = ?, updated_at = ? WHERE setting_key = ?", [
+      JSON.stringify([
+        { href: "/about", label: "About Us" },
+        { href: "/faculty", label: "Faculty" },
+        { href: "/achievements", label: "Achievements" },
+        { href: "/testimonials", label: "Testimonials" },
+        { href: "/test-series", label: "Test Series" },
+        { href: "/shop", label: "Our Batches" },
+        { href: "/books", label: "Books" },
+        { href: "/branches", label: "Offline Classrooms" },
+        { href: "/contact", label: "Contact" },
+        { href: "/login", label: "Student Login" },
+      ]),
+      stamp,
+      "nav_resources_json",
+    ]);
+  }
+  await run(
+    "UPDATE homepage_sections SET title = ?, subtitle = ?, extra_json = ? WHERE section_key = 'why' AND extra_json LIKE ?",
+    [
+      "Why Students Choose Us",
+      "Coaching led by Aditya Jhawar for CA, CS and CMA.",
+      JSON.stringify([
+        { title: "India's Youngest CA, CS & CMA", body: "Aditya Jhawar holds CA, CS and CMA and teaches the programmes himself." },
+        { title: "One Mentor, Three Courses", body: "Chartered Accountancy, Company Secretary and Cost Accountancy under one faculty team." },
+        { title: "Concepts Before Questions", body: "Every topic is explained for understanding, then practised the way the exam asks it." },
+        { title: "Surat Classrooms", body: "Offline batches at Parvat Patiya, Vesu and Pal, with a student portal after you buy a batch." },
+        { title: "Notes With the Batch", body: "Study material is released with the lectures, not sold as a separate download." },
+        { title: "Exam Practice", body: "Test series and chapter practice so students know where they stand before the attempt." },
+        { title: "Level by Level", body: "Foundation, intermediate and final for CA and CMA, and CSEET, Executive and Professional for CS." },
+        { title: "A Counsellor on Call", body: "Branch desks answer course, batch and book questions before you join." },
+      ]),
+      "%Expert Guidance%",
+    ],
+  );
+  if (!readIntegrations().smtpHost) {
+    await run("UPDATE users SET email_verified = 1, updated_at = ? WHERE role = 'student' AND password_hash IS NOT NULL AND password_hash <> '' AND email_verified = 0", [stamp]);
+  }
+  await run("UPDATE homepage_sections SET enabled = 0 WHERE section_key IN ('alumni', 'placement')");
+  await run(
+    "UPDATE homepage_sections SET title = ? WHERE section_key = 'why' AND title LIKE ?",
+    ["Why Students Choose Us", "%Why Students Choose AJ Classes%"],
+  );
+  await run(
+    "UPDATE homepage_sections SET title = ?, subtitle = ?, cta_label = ?, extra_json = ? WHERE section_key = 'shop' AND (title LIKE ? OR title LIKE ? OR cta_label LIKE ?)",
+    [
+      "Our Batches",
+      "Classroom and online batches published by AJ Classes. Choose a batch and continue in the student portal after payment.",
+      "View our batches",
+      JSON.stringify({ kicker: "Our Batches" }),
+      "%Buy a published%",
+      "%Open the shop%",
+      "%Open the shop%",
+    ],
+  );
+  for (const [key, value, pattern] of [
+    ["shop_title", "Our Batches", "%Buy a published%"],
+    ["shop_subtitle", "Classroom and online batches published by AJ Classes. Choose a batch and continue in the student portal after payment.", "%Pay for a live batch%"],
+  ] as const) {
+    await run("UPDATE website_settings SET setting_value = ?, updated_at = ? WHERE setting_key = ? AND setting_value LIKE ?", [value, stamp, key, pattern]);
   }
   const bar = await one<any>("SELECT * FROM announcements WHERE id = ?", ["announce-bar"]);
   if (bar && (!bar.bg_color || ["#24082b", "#24082B", "#102A56"].includes(bar.bg_color))) {

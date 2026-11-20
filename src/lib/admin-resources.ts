@@ -1,8 +1,9 @@
 export type Field = {
   name: string;
   label: string;
-  type: "text" | "textarea" | "number" | "money" | "select" | "boolean" | "date" | "email" | "url" | "image";
+  type: "text" | "textarea" | "number" | "money" | "select" | "boolean" | "date" | "email" | "url" | "image" | "password";
   required?: boolean;
+  virtual?: boolean;
   options?: { label: string; value: string }[];
   optionsFrom?: { table: string; value: string; label: string; where?: string };
   list?: boolean;
@@ -313,12 +314,14 @@ export const resources: Record<string, Resource> = {
   },
   students: {
     key: "students", title: "Students", table: "users", permission: "students.manage",
-    allowCreate: false, allowDelete: false, fixed: { role: "student" },
+    allowCreate: true, allowDelete: false, fixed: { role: "student" },
     orderBy: "created_at DESC", search: ["full_name", "email", "mobile"],
     columns: ["id", "full_name", "email", "mobile", "status", "email_verified", "created_at"],
     fields: [
-      { name: "full_name", label: "Name", type: "text", list: true },
-      { name: "mobile", label: "Mobile", type: "text" },
+      { name: "full_name", label: "Name", type: "text", required: true, list: true },
+      { name: "email", label: "Login email", type: "email", required: true, list: true },
+      { name: "mobile", label: "Mobile", type: "text", list: true },
+      { name: "password", label: "Password for email login", type: "password", virtual: true },
       { name: "status", label: "Status", type: "select", options: [{ label: "Active", value: "active" }, { label: "Suspended", value: "suspended" }], list: true },
       { name: "email_verified", label: "Email verified", type: "boolean" },
     ],
@@ -388,6 +391,38 @@ export const resources: Record<string, Resource> = {
       ], list: true },
       { name: "sort_order", label: "Order", type: "number" },
       { name: "enabled", label: "Visible", type: "boolean", list: true },
+    ],
+  },
+  books: {
+    key: "books", title: "Books (physical shipping)", table: "books", permission: "courses.manage", softDelete: true,
+    orderBy: "sort_order, title", search: ["title", "description"],
+    columns: ["id", "title", "price_paise", "stock", "status"],
+    fields: [
+      { name: "title", label: "Book title", type: "text", required: true, list: true },
+      { name: "description", label: "Description", type: "textarea" },
+      { name: "image_url", label: "Cover image", type: "image" },
+      { name: "price_paise", label: "Selling price (₹)", type: "money", required: true, list: true },
+      { name: "compare_at_paise", label: "Original price (₹)", type: "money" },
+      { name: "stock", label: "Copies in stock", type: "number", required: true, list: true },
+      { name: "status", label: "Status", type: "select", options: published, list: true },
+      { name: "sort_order", label: "Order", type: "number" },
+    ],
+  },
+  shipments: {
+    key: "shipments", title: "Book shipments", table: "book_shipments", permission: "courses.manage",
+    allowCreate: false, allowDelete: false,
+    orderBy: "created_at DESC", search: ["title", "buyer_name", "phone", "city", "pincode", "tracking"],
+    columns: ["id", "title", "buyer_name", "phone", "city", "pincode", "status", "tracking", "created_at"],
+    fields: [
+      { name: "status", label: "Shipping status", type: "select", options: [
+        { label: "Pending dispatch", value: "pending" },
+        { label: "Packed", value: "packed" },
+        { label: "Shipped", value: "shipped" },
+        { label: "Delivered", value: "delivered" },
+        { label: "Awaiting stock", value: "awaiting_stock" },
+      ], list: true },
+      { name: "tracking", label: "Tracking number", type: "text", list: true },
+      { name: "notes", label: "Internal notes", type: "textarea" },
     ],
   },
   media: {

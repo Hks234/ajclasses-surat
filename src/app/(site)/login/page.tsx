@@ -7,6 +7,7 @@ import { ready } from "@/lib/db";
 
 export const metadata = { title: "Student Login" };
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export default async function Page() {
   await ready();

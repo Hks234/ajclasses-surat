@@ -33,7 +33,7 @@ export async function GET(req: Request) {
   const profileRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", { headers: { authorization: `Bearer ${token.access_token}` } });
   const profile = await profileRes.json();
   if (!profile.email || !profile.verified_email) return NextResponse.redirect(pageUrl("/login?error=google"));
-  let user = await one<any>("SELECT * FROM users WHERE email = ? AND deleted_at IS NULL", [String(profile.email).toLowerCase()]);
+  let user = await one<any>("SELECT * FROM users WHERE LOWER(email) = ? AND deleted_at IS NULL", [String(profile.email).toLowerCase()]);
   if (user && user.role !== "student") return NextResponse.redirect(pageUrl("/login?error=google"));
   if (user?.status === "suspended") return NextResponse.redirect(pageUrl("/login?error=suspended"));
   if (!user) {

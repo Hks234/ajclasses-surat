@@ -1,11 +1,12 @@
 import { resourceByKey, type Field, type Resource } from "@/lib/admin-resources";
-import { can, requireAdmin } from "@/lib/auth";
+import { can, hashPassword, requireAdmin } from "@/lib/auth";
 import { logActivity } from "@/lib/content";
 import { all, insert, ready, run } from "@/lib/db";
 import { bad, json, originBlock } from "@/lib/http";
-import { clientIp, id, now, rupeesToPaise, slugify } from "@/lib/utils";
+import { readIntegrations } from "@/lib/secrets";
+import { clientIp, id, normalizeMobile, now, passwordOk, rupeesToPaise, slugify } from "@/lib/utils";
 
-const createdTables = new Set(["courses", "batches", "study_materials", "test_series", "tests", "testimonials", "announcements", "coupons", "media_assets", "promotional_banners", "users", "faqs", "site_events"]);
+const createdTables = new Set(["courses", "batches", "study_materials", "test_series", "tests", "testimonials", "announcements", "coupons", "media_assets", "promotional_banners", "users", "faqs", "site_events", "books"]);
 const updatedTables = new Set(["courses", "users", "email_templates"]);
 
 function allowedValueTables(table: string) {
@@ -83,7 +84,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ resource: strin
     resource.search.forEach(() => params.push(`%${q}%`));
   }
   const sqlWhere = where.length ? ` WHERE ${where.join(" AND ")}` : "";
-  const columns = Array.from(new Set(["id", ...resource.columns, ...resource.fields.map((field) => field.name)]));
+  const columns = Array.from(new Set(["id", ...resource.columns, ...resource.fields.filter((field) => !field.virtual).map((field) => field.name)]));
   try {
     const totalRow = await all<any>(`SELECT COUNT(*) AS c FROM ${resource.table}${sqlWhere}`, params);
     const rows = await all<any>(`SELECT ${columns.join(",")} FROM ${resource.table}${sqlWhere} ORDER BY ${resource.orderBy} LIMIT 20 OFFSET ?`, [...params, (page - 1) * 20]);
@@ -125,11 +126,36 @@ export async function POST(req: Request, ctx: { params: Promise<{ resource: stri
     if (resource.table === "courses" && !data.status) data.status = "draft";
     if (resource.table === "batches" && !data.status) data.status = "draft";
     if (resource.table === "test_series" && !data.status) data.status = "draft";
-    if (resource.table === "courses" || resource.table === "batches" || resource.table === "test_series") data.deleted_at = null;
+    if (resource.table === "courses" || resource.table === "batches" || resource.table === "test_series" || resource.table === "books") data.deleted_at = null;
+    if (resource.table === "books" && !data.status) data.status = "draft";
+    if (resource.table === "books" && (data.stock === null || data.stock === undefined)) data.stock = 0;
+    if (resource.key === "students") {
+      const password = String(body.password || "");
+      delete data.password;
+      if (!passwordOk(password)) return bad("Set a password with 10 or more characters, including upper case, lower case and a number.");
+      const email = String(data.email || "").toLowerCase();
+      if (!email) return bad("Login email is required.");
+      data.email = email;
+      data.mobile = data.mobile ? normalizeMobile(String(data.mobile)) : null;
+      data.password_hash = await hashPassword(password);
+      data.role = "student";
+      data.status = data.status || "active";
+      data.email_verified = readIntegrations().smtpHost && data.email_verified === 0 ? 0 : 1;
+      data.must_change_password = 0;
+      data.google_sub = null;
+      data.avatar_url = null;
+      data.updated_at = now();
+      data.deleted_at = null;
+    }
     if (resource.table === "batches") data.seats_sold = 0;
     if (resource.table === "coupons") data.code = String(data.code || "").toUpperCase();
     await insert(resource.table, { id: rowId, ...data });
-    await logActivity(auth.session.id, "create", resource.table, rowId, data, clientIp(req));
+    if (resource.key === "students") {
+      await insert("student_profiles", { user_id: rowId, preferred_course: null, city: null, bio: null });
+    }
+    const logged = { ...data };
+    delete logged.password_hash;
+    await logActivity(auth.session.id, "create", resource.table, rowId, logged, clientIp(req));
     return json({ ok: true, id: rowId });
   } catch (error) {
     return bad(error instanceof Error ? error.message : "Could not save.");

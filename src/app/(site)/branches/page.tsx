@@ -3,7 +3,7 @@ import { getBranches, getSettings } from "@/lib/content";
 import { ready } from "@/lib/db";
 import { telLink, waLink } from "@/lib/utils";
 
-export const metadata = { title: "Branches" };
+export const metadata = { title: "Offline Classrooms" };
 export const dynamic = "force-dynamic";
 
 export default async function BranchesPage() {
@@ -19,7 +19,7 @@ export default async function BranchesPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <PageHero kicker="Surat" title="Branch locations" text={settings.email} />
+      <PageHero kicker="Surat" title="Offline Classrooms" text="Classroom coaching at the Parvat Patiya, Vesu and Pal branches of AJ Classes." />
       <section className="bg-paper py-12"><div className="container-aj grid gap-6">
         {branches.map((branch) => (
           <article key={branch.id} className="card grid gap-4 p-5 lg:grid-cols-2">

@@ -5,7 +5,7 @@ export const defaultCourses = [
   { id: "cma-foundation", slug: "cma-foundation", name: "CMA Foundation", description: "The foundation level of the Cost and Management Accountancy course.", thumbnail: "", badge: "", duration: "", learning_mode: "Classroom & student portal", career_line: "", start_price: 0, brochure_url: "" },
   { id: "cma-intermediate", slug: "cma-intermediate", name: "CMA Intermediate", description: "The intermediate level of the Cost and Management Accountancy course.", thumbnail: "", badge: "", duration: "", learning_mode: "Classroom & student portal", career_line: "", start_price: 0, brochure_url: "" },
   { id: "cma-final", slug: "cma-final", name: "CMA Final", description: "The final level of the Cost and Management Accountancy course.", thumbnail: "", badge: "", duration: "", learning_mode: "Classroom & student portal", career_line: "", start_price: 0, brochure_url: "" },
-  { id: "cs-eet", slug: "cs-eet", name: "CS-EET", description: "The CS Executive Entrance Test.", thumbnail: "", badge: "", duration: "", learning_mode: "Classroom & student portal", career_line: "", start_price: 0, brochure_url: "" },
+  { id: "cs-eet", slug: "cs-eet", name: "CS CSEET", description: "The Company Secretary Executive Entrance Test.", thumbnail: "", badge: "", duration: "", learning_mode: "Classroom & student portal", career_line: "", start_price: 0, brochure_url: "" },
   { id: "cs-executive", slug: "cs-executive", name: "CS Executive", description: "The executive level of the Company Secretary course.", thumbnail: "", badge: "", duration: "", learning_mode: "Classroom & student portal", career_line: "", start_price: 0, brochure_url: "" },
   { id: "cs-professional", slug: "cs-professional", name: "CS Professional", description: "The professional level of the Company Secretary course.", thumbnail: "", badge: "", duration: "", learning_mode: "Classroom & student portal", career_line: "", start_price: 0, brochure_url: "" },
 ];
@@ -37,14 +37,14 @@ export const defaultFaqs = [
 ];
 
 export const defaultFeatures = [
-  { title: "Expert Guidance", body: "Classes led by the AJ Classes faculty team." },
-  { title: "Structured Learning", body: "Subjects, chapters and lessons arranged batch by batch." },
-  { title: "Concept-Based Teaching", body: "Lectures focused on understanding the concept before the question." },
-  { title: "Quality Study Material", body: "Notes and practice files released inside the student portal." },
-  { title: "Regular Test Series", body: "Objective tests with instant scoring for published test series." },
-  { title: "Experienced Faculty", body: "Faculty profiles are published and edited by the institute." },
-  { title: "Flexible Online Learning", body: "Purchased lectures can be resumed on mobile and desktop." },
-  { title: "Dedicated Student Support", body: "Enquiries and support requests reach the institute team." },
+  { title: "India's Youngest CA, CS & CMA", body: "Aditya Jhawar holds CA, CS and CMA and teaches the programmes himself." },
+  { title: "One Mentor, Three Courses", body: "Chartered Accountancy, Company Secretary and Cost Accountancy under one faculty team." },
+  { title: "Concepts Before Questions", body: "Every topic is explained for understanding, then practised the way the exam asks it." },
+  { title: "Surat Classrooms", body: "Offline batches at Parvat Patiya, Vesu and Pal, with a student portal after you buy a batch." },
+  { title: "Notes With the Batch", body: "Study material is released with the lectures, not sold as a separate download." },
+  { title: "Exam Practice", body: "Test series and chapter practice so students know where they stand before the attempt." },
+  { title: "Level by Level", body: "Foundation, intermediate and final for CA and CMA, and CSEET, Executive and Professional for CS." },
+  { title: "A Counsellor on Call", body: "Branch desks answer course, batch and book questions before you join." },
 ];
 
 export const defaultHero = {
@@ -61,19 +61,19 @@ export const defaultHero = {
       { label: "Enquire Now", href: "/enquiry" },
     ],
     trust: [
-      { label: "Classroom batches in Parvat Patiya, Vesu and Pal" },
-      { label: "Student portal for purchased lectures and notes" },
-      { label: "CA, CS and CMA programmes taught by Aditya Jhawar" },
+      { label: "India's youngest CA, CS and CMA — Aditya Jhawar teaches the course himself" },
+      { label: "One mentor for Chartered Accountancy, Company Secretary and Cost Accountancy" },
+      { label: "Clear concepts, exam practice and personal guidance at every level" },
     ],
   }),
 };
 
 export const defaultSections = {
   programmes: { title: "Explore Our Programmes", subtitle: "CA, CS and CMA coaching with classroom batches in Surat and an online student portal.", cta_label: "View All Programmes", cta_href: "/courses", extra_json: JSON.stringify({ kicker: "Our Courses" }) },
-  shop: { title: "Buy a published batch", subtitle: "Pay for a live batch and start learning in the student portal.", cta_label: "Open the shop", cta_href: "/shop", extra_json: JSON.stringify({ kicker: "Shop" }) },
+  shop: { title: "Our Batches", subtitle: "Published classroom and online batches. Pay here and start in the student portal.", cta_label: "View our batches", cta_href: "/shop", extra_json: JSON.stringify({ kicker: "Our Batches" }) },
   alumni: { title: "Our Students Learn Here", subtitle: "Classroom coaching in Surat with an online student portal.", extra_json: JSON.stringify({ kicker: "Classroom & Online" }) },
   placement: { title: "Classroom Coaching, Online Learning", subtitle: "CA, CS and CMA programmes taught from three Surat branches.", cta_label: "View Achievements", cta_href: "/achievements", extra_json: JSON.stringify({ kicker: "Results" }) },
-  why: { title: "Why Students Choose AJ Classes", subtitle: "A structured coaching experience for CA, CS and CMA.", extra_json: JSON.stringify(defaultFeatures) },
+  why: { title: "Why Students Choose Us", subtitle: "Coaching led by Aditya Jhawar for CA, CS and CMA.", extra_json: JSON.stringify(defaultFeatures) },
   reviews: { title: "Our Students Say We're Gamechangers", cta_label: "View More Testimonials", cta_href: "/testimonials", extra_json: JSON.stringify({ kicker: "Reviews" }) },
   faculty_home: { title: "Industry Leaders Helping You Find The Way", cta_label: "View More", cta_href: "/faculty", extra_json: JSON.stringify({ kicker: "Faculty" }) },
   events: { title: "Building Futures Beyond The Classroom", subtitle: "Events and campus highlights published by AJ Classes.", extra_json: JSON.stringify({ kicker: "Campus" }) },
@@ -81,3 +81,65 @@ export const defaultSections = {
   counsellor: { title: "Our Counsellor Can Clear Any Confusion", subtitle: "Contact a programme desk or send an enquiry. Branch numbers are published by the institute.", extra_json: JSON.stringify({ kicker: "Enquire" }) },
   community: { title: "Join Our Community", subtitle: "Stay up to date on courses, batches and events.", cta_label: "Notify me" },
 };
+
+export const mentorHighlights = [
+  { label: "India's youngest CA, CS and CMA — Aditya Jhawar teaches the course himself" },
+  { label: "One mentor for Chartered Accountancy, Company Secretary and Cost Accountancy" },
+  { label: "Clear concepts, exam practice and personal guidance at every level" },
+];
+
+const retiredTrust = /classroom batches in parvat|student portal for purchased|programmes taught by aditya jhawar/i;
+
+const retiredWhy = /expert guidance|structured learning|concept-based teaching|quality study material|experienced faculty/i;
+
+export function whyCards(extra: unknown) {
+  if (!Array.isArray(extra) || !extra.length) return defaultFeatures;
+  const titles = extra.map((item) => String((item as { title?: string })?.title || ""));
+  if (titles.some((title) => retiredWhy.test(title))) return defaultFeatures;
+  return extra as { title: string; body: string }[];
+}
+
+export function heroHighlights(trust?: { label?: string }[]) {
+  const labels = (trust || []).map((item) => String(item?.label || item || "")).filter(Boolean);
+  if (!labels.length || labels.some((label) => retiredTrust.test(label))) return mentorHighlights;
+  return labels.map((label) => ({ label }));
+}
+
+export function publicBatchTitle(title?: string | null) {
+  if (!title || /buy a published batch|open the shop|buy a batch/i.test(title)) return "Our Batches";
+  return title;
+}
+
+export function publicBatchSubtitle(text?: string | null) {
+  if (!text || /pay for a live batch|published batches with fees|start learning in the student portal/i.test(text)) {
+    return "Classroom and online batches published by AJ Classes. Choose a batch and continue in the student portal after payment.";
+  }
+  return text;
+}
+
+export function publicBatchCta(label?: string | null) {
+  if (!label || /open the shop|buy a batch|buy a published/i.test(label)) return "View our batches";
+  return label;
+}
+
+export function mergeProgrammeCourses(loaded?: any[]) {
+  const bySlug = new Map(defaultCourses.map((course) => [course.slug, { ...course }]));
+  for (const course of loaded || []) {
+    const name = courseDisplayName(course?.name).toLowerCase();
+    const match = defaultCourses.find((item) => item.slug === course?.slug || item.name.toLowerCase() === name);
+    if (match) bySlug.set(match.slug, { ...match, ...course, name: courseDisplayName(course.name || match.name), slug: course.slug || match.slug });
+    else if (course?.slug) bySlug.set(course.slug, course);
+  }
+  const order = defaultCourses.map((course) => course.slug);
+  return [...bySlug.values()].sort((a, b) => {
+    const ai = order.indexOf(a.slug);
+    const bi = order.indexOf(b.slug);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+}
+
+export function courseDisplayName(name?: string) {
+  const value = String(name || "");
+  if (/^cs[-\s]?(eet|cseet)$/i.test(value)) return "CS CSEET";
+  return value;
+}

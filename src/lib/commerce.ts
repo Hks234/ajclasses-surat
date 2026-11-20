@@ -4,12 +4,43 @@ import { queueTemplate } from "./email";
 import { demoCheckoutAllowed, readIntegrations, razorpayReady } from "./secrets";
 import { hmac, id, inr, now, pageUrl, safeEqual, sha256 } from "./utils";
 
-export async function quoteProduct(type: "batch" | "test_series", itemId: string, userId: string, couponCode?: string) {
+export type CheckoutType = "batch" | "test_series" | "book";
+
+export type ShippingAddress = {
+  name: string;
+  phone: string;
+  line1: string;
+  line2: string;
+  city: string;
+  state: string;
+  pincode: string;
+};
+
+export function readShipping(input: Record<string, unknown> | undefined): { shipping: ShippingAddress } | { error: string } {
+  const shipping: ShippingAddress = {
+    name: String(input?.name || "").trim(),
+    phone: String(input?.phone || "").replace(/\s+/g, ""),
+    line1: String(input?.line1 || "").trim(),
+    line2: String(input?.line2 || "").trim(),
+    city: String(input?.city || "").trim(),
+    state: String(input?.state || "").trim(),
+    pincode: String(input?.pincode || "").trim(),
+  };
+  if (!shipping.name || !shipping.phone || !shipping.line1 || !shipping.city || !shipping.state || !/^\d{6}$/.test(shipping.pincode)) {
+    return { error: "Enter a complete shipping address with a 6-digit PIN code. Books are sent by physical delivery." };
+  }
+  return { shipping };
+}
+
+export async function quoteProduct(type: CheckoutType, itemId: string, userId: string, couponCode?: string) {
   const product = await loadProduct(type, itemId);
-  if (!product) return { error: "This programme is not available." as const };
-  if (product.price_paise <= 0) return { error: "Fees have not been published for this programme yet." as const };
-  const existing = await activeEnrollment(userId, type, itemId);
-  if (existing) return { error: "You already have access to this programme." as const };
+  if (!product) return { error: "This item is not available." as const };
+  if (product.price_paise <= 0) return { error: "A selling price has not been published for this item yet." as const };
+  if (type === "book" && Number(product.stock) <= 0) return { error: "This book is out of stock." as const };
+  if (type !== "book") {
+    const existing = await activeEnrollment(userId, type, itemId);
+    if (existing) return { error: "You already have access to this programme." as const };
+  }
   if (type === "batch" && product.seats > 0 && product.seats_sold >= product.seats) return { error: "This batch has no seats left." as const };
   let discount = 0;
   let coupon: any = null;
@@ -24,6 +55,9 @@ export async function quoteProduct(type: "batch" | "test_series", itemId: string
 }
 
 async function loadProduct(type: string, itemId: string) {
+  if (type === "book") {
+    return one<any>("SELECT * FROM books WHERE id = ? AND deleted_at IS NULL AND status = 'published'", [itemId]);
+  }
   if (type === "batch") {
     return one<any>(
       `SELECT b.*, c.name AS course_name FROM batches b JOIN courses c ON c.id = b.course_id
@@ -64,11 +98,12 @@ export async function evaluateCoupon(code: string, userId: string, amount: numbe
   return { discount, coupon, error: null };
 }
 
-export async function createCheckout(userId: string, type: "batch" | "test_series", itemId: string, couponCode?: string) {
+export async function createCheckout(userId: string, type: CheckoutType, itemId: string, couponCode?: string, shipping?: ShippingAddress) {
+  if (type === "book" && !shipping) return { error: "A delivery address is required for book orders." };
   const quote = await quoteProduct(type, itemId, userId, couponCode);
   if ("error" in quote && quote.error) return { error: quote.error };
   const { product, payable, coupon } = quote as any;
-  const title = type === "batch" ? `${product.course_name} · ${product.name}` : product.title;
+  const title = type === "batch" ? `${product.course_name} · ${product.name}` : type === "book" ? product.title : product.title;
   const purchaseId = id();
   const paymentId = id();
   const stamp = now();
@@ -79,6 +114,7 @@ export async function createCheckout(userId: string, type: "batch" | "test_serie
       total_paise: payable,
       status: "pending",
       coupon_id: coupon?.id || null,
+      shipping_json: shipping ? JSON.stringify(shipping) : null,
       created_at: stamp,
     });
     await insert("purchase_items", {
@@ -175,6 +211,33 @@ export async function fulfillPayment(paymentId: string, extra: { method?: string
     await run("UPDATE payments SET status = 'paid', method = ?, razorpay_payment_id = COALESCE(?, razorpay_payment_id), updated_at = ? WHERE id = ?", [extra.method || payment.provider, extra.razorpayPaymentId || null, stamp, paymentId]);
     await run("UPDATE purchases SET status = 'paid' WHERE id = ?", [payment.purchase_id]);
     for (const item of items) {
+      if (item.item_type === "book") {
+        const book = await one<any>("SELECT stock FROM books WHERE id = ?", [item.item_id]);
+        let shipping: Partial<ShippingAddress> = {};
+        try { shipping = JSON.parse(purchase.shipping_json || "{}"); } catch { shipping = {}; }
+        const existingShip = await one("SELECT id FROM book_shipments WHERE purchase_id = ? AND book_id = ?", [purchase.id, item.item_id]);
+        if (!existingShip) {
+          await insert("book_shipments", {
+            id: id(),
+            purchase_id: purchase.id,
+            book_id: item.item_id,
+            title: item.title,
+            buyer_name: shipping.name || user?.full_name || "Student",
+            phone: shipping.phone || user?.mobile || "",
+            line1: shipping.line1 || "",
+            line2: shipping.line2 || "",
+            city: shipping.city || "",
+            state: shipping.state || "",
+            pincode: shipping.pincode || "",
+            status: Number(book?.stock) > 0 ? "pending" : "awaiting_stock",
+            tracking: "",
+            notes: "",
+            created_at: stamp,
+          });
+        }
+        if (Number(book?.stock) > 0) await run("UPDATE books SET stock = CASE WHEN stock > 0 THEN stock - 1 ELSE 0 END WHERE id = ?", [item.item_id]);
+        continue;
+      }
       const column = item.item_type === "batch" ? "batch_id" : "test_series_id";
       const found = await one<any>(`SELECT id FROM enrollments WHERE user_id = ? AND ${column} = ? AND status = 'active'`, [payment.user_id, item.item_id]);
       if (found) continue;
